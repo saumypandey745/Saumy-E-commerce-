@@ -1,0 +1,42 @@
+replicaCount: 3
+
+image:
+  repository: ghcr.io/your-org/api-gateway
+  pullPolicy: IfNotPresent
+  tag: "1.0.0"
+
+service:
+  type: LoadBalancer
+  port: 8000
+
+ingress:
+  enabled: true
+  className: "istio"
+  annotations:
+    kubernetes.io/ingress.class: istio
+  hosts:
+    - host: api.enterprise-ecommerce.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+
+# Blue-Green Deployment Config (Argo Rollouts)
+strategy:
+  blueGreen:
+    activeService: api-gateway-active
+    previewService: api-gateway-preview
+    autoPromotionEnabled: false

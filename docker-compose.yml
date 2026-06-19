@@ -1,0 +1,179 @@
+version: '3.8'
+
+services:
+  # Infrastructure
+  mongo:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - ecommerce-network
+
+  redis:
+    image: redis:7.0-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ecommerce-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: adminpassword
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ecommerce-network
+
+  # Microservices
+  auth-service:
+    build: ./microservices/auth-service
+    environment:
+      - PORT=8001
+      - MONGO_URI=mongodb://mongo:27017/ecommerce_auth
+      - JWT_SECRET=supersecretjwtkey_12345
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - ecommerce-network
+
+  product-service:
+    build: ./microservices/product-service
+    environment:
+      - PORT=8003
+      - MONGO_URI=mongodb://mongo:27017/ecommerce_products
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://admin:adminpassword@rabbitmq:5672
+    depends_on:
+      - mongo
+      - redis
+      - rabbitmq
+    networks:
+      - ecommerce-network
+
+  order-service:
+    build: ./microservices/order-service
+    environment:
+      - PORT=8004
+      - RABBITMQ_URL=amqp://admin:adminpassword@rabbitmq:5672
+      - PRODUCT_SERVICE_URL=http://product-service:8003
+      - JWT_SECRET=supersecretjwtkey_12345
+    depends_on:
+      - rabbitmq
+      - product-service
+    networks:
+      - ecommerce-network
+
+  payment-service:
+    build: ./microservices/payment-service
+    environment:
+      - PORT=8006
+      - RABBITMQ_URL=amqp://admin:adminpassword@rabbitmq:5672
+      - STRIPE_SECRET_KEY=sk_test_mock123
+    depends_on:
+      - rabbitmq
+    networks:
+      - ecommerce-network
+
+  cart-service:
+    build: ./microservices/cart-service
+    environment:
+      - PORT=8007
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - ecommerce-network
+
+  search-service:
+    build: ./microservices/search-service
+    environment:
+      - PORT=8008
+      - RABBITMQ_URL=amqp://admin:adminpassword@rabbitmq:5672
+    depends_on:
+      - rabbitmq
+    networks:
+      - ecommerce-network
+
+  review-service:
+    build: ./microservices/review-service
+    environment:
+      - PORT=8009
+      - MONGO_URI=mongodb://mongo:27017/ecommerce_reviews
+      - RABBITMQ_URL=amqp://admin:adminpassword@rabbitmq:5672
+      - ORDER_SERVICE_URL=http://order-service:8004
+    depends_on:
+      - mongo
+      - rabbitmq
+      - order-service
+    networks:
+      - ecommerce-network
+
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - REDIS_URL=redis://redis:6379
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - PRODUCT_SERVICE_URL=http://product-service:8003
+      - ORDER_SERVICE_URL=http://order-service:8004
+      - PAYMENT_SERVICE_URL=http://payment-service:8006
+      - CART_SERVICE_URL=http://cart-service:8007
+      - SEARCH_SERVICE_URL=http://search-service:8008
+      - REVIEW_SERVICE_URL=http://review-service:8009
+    depends_on:
+      - redis
+      - auth-service
+      - product-service
+      - order-service
+      - payment-service
+      - cart-service
+      - search-service
+      - review-service
+    networks:
+      - ecommerce-network
+
+  # Frontends
+  storefront:
+    build: ./frontend/apps/storefront
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - api-gateway
+    networks:
+      - ecommerce-network
+
+  admin-dashboard:
+    build: ./frontend/apps/admin-dashboard
+    ports:
+      - "3001:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - api-gateway
+    networks:
+      - ecommerce-network
+
+networks:
+  ecommerce-network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+  redis_data:
+  rabbitmq_data:

@@ -1,0 +1,16 @@
+{
+  "name": "ecommerce-enterprise",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-Vendor E-Commerce Platform",
+  "workspaces": [
+    "api-gateway",
+    "microservices/*",
+    "frontend/apps/*",
+    "frontend/packages/*"
+  ],
+  "scripts": {
+    "start": "docker-compose -f infrastructure/docker-compose.yml up -d",
+    "stop": "docker-compose -f infrastructure/docker-compose.yml down"
+  }
+}

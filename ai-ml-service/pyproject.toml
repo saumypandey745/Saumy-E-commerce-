@@ -1,0 +1,6 @@
+[tool.pyrefly]
+python_interpreter = "/home/saumy/portproject/.pnpm-store/v11/projects/f958653672c213441391deec1a713503/ai-ml-service/.venv/bin/python3"
+site_package_path = [
+  "/home/saumy/portproject/.pnpm-store/v11/projects/f958653672c213441391deec1a713503/ai-ml-service/.venv/lib/python3.10/site-packages",
+  "/home/saumy/.local/lib/python3.10/site-packages",
+]
