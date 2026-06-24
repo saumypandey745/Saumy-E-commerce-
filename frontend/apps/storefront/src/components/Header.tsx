@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, User, Search, Menu, X, Globe, Heart, Package, LogOut, Sun, Moon, ChevronDown, Bell } from 'lucide-react';
+import { ShoppingCart, User, Search, Menu, X, Globe, Heart, Package, LogOut, Sun, Moon, ChevronDown, Bell, Zap } from 'lucide-react';
 import { useAppStore } from '../app/store';
 import { translations, Language, Currency } from '../app/translations';
 import { useTheme } from 'next-themes';
@@ -17,11 +17,17 @@ export default function Header() {
   
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  const [mockNotifications, setMockNotifications] = useState([
+    { id: 1, type: 'order', title: 'Order Shipped!', message: 'Your order #ORD-8472 is on the way.', time: '2 hours ago' },
+    { id: 2, type: 'alert', title: 'Flash Sale Alert', message: 'Up to 60% off on premium audio gear.', time: '1 day ago' }
+  ]);
 
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
 
@@ -46,6 +52,7 @@ export default function Header() {
   useEffect(() => {
     setMobileOpen(false);
     setProfileOpen(false);
+    setNotificationsOpen(false);
     setMegaMenuOpen(false);
   }, [pathname]);
 
@@ -59,7 +66,8 @@ export default function Header() {
       try {
         const res = await api.get(`/api/search?q=${encodeURIComponent(searchQuery)}&limit=5`);
         if (res.data.success) {
-          setSearchSuggestions(res.data.data.products || []);
+          const payload = res.data.data || res.data;
+          setSearchSuggestions(payload.products || []);
         }
       } catch (err) {
         console.error('Failed to fetch search suggestions', err);
@@ -74,15 +82,15 @@ export default function Header() {
         ? 'bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 shadow-sm' 
         : 'bg-white dark:bg-[#0f172a] border-b border-transparent'
     }`}>
-      <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
         
         {/* Left: Logo & Mega Menu Trigger */}
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-brand-500 to-purple-500 flex items-center justify-center shadow-lg transition-transform group-hover:scale-105 group-hover:rotate-3">
-              <span className="font-bold text-white text-lg">E</span>
+            <div className="h-10 w-10 rounded-xl bg-white shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center transition-transform group-hover:scale-105">
+              <img src="/logo.png" alt="Saumy E-commerce Logo" className="h-full w-full object-contain p-0.5" />
             </div>
-            <span className="font-bold text-xl tracking-tight text-slate-900 dark:text-white hidden sm:block">eComm<span className="text-brand-500">.</span></span>
+            <span className="font-bold text-xl tracking-tight text-slate-900 dark:text-white hidden sm:block">Saumy E-commerce<span className="text-brand-500">.</span></span>
           </Link>
           
           <nav className="hidden md:flex items-center gap-1">
@@ -156,6 +164,12 @@ export default function Header() {
               placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchQuery.trim() !== '') {
+                  setSearchFocused(false);
+                  window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
+                }
+              }}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
               className="w-full h-10 pl-10 pr-4 bg-slate-100 dark:bg-dark-800 border-none outline-none rounded-full text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:ring-2 focus:ring-brand-500/50 transition-shadow"
@@ -212,6 +226,8 @@ export default function Header() {
               <option value="en">EN</option>
               <option value="es">ES</option>
               <option value="hi">HI</option>
+              <option value="fr">FR</option>
+              <option value="de">DE</option>
             </select>
             <div className="h-4 w-px bg-slate-200 dark:bg-dark-700"></div>
             <select value={currency} onChange={(e) => setCurrency(e.target.value as Currency)} className="bg-transparent border-none text-xs font-medium text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer">
@@ -222,13 +238,67 @@ export default function Header() {
           </div>
 
           {/* Notifications */}
-          <button className="relative p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-dark-800 rounded-full transition-colors hidden sm:block">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-dark-900"></span>
-          </button>
+          <div className="relative hidden sm:block">
+            <button 
+              onClick={() => { setNotificationsOpen(!notificationsOpen); setProfileOpen(false); }}
+              className="relative p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-dark-800 rounded-full transition-colors"
+            >
+              <Bell className="w-5 h-5" />
+              {mockNotifications.length > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-dark-900"></span>
+              )}
+            </button>
+            <AnimatePresence>
+              {notificationsOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-12 w-80 rounded-2xl bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 shadow-2xl py-2 z-50 origin-top-right overflow-hidden"
+                >
+                  <div className="px-4 py-3 border-b border-slate-100 dark:border-dark-700 flex justify-between items-center">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Notifications</h3>
+                    {mockNotifications.length > 0 && (
+                      <button onClick={() => setMockNotifications([])} className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700">Mark all as read</button>
+                    )}
+                  </div>
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {mockNotifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-slate-500 dark:text-slate-400 text-sm">
+                        No new notifications
+                      </div>
+                    ) : (
+                      mockNotifications.map(notification => (
+                        <div key={notification.id} onClick={() => setMockNotifications(prev => prev.filter(n => n.id !== notification.id))} className="px-4 py-3 border-b border-slate-50 dark:border-dark-700/50 hover:bg-slate-50 dark:hover:bg-dark-700/50 transition-colors cursor-pointer group">
+                          <div className="flex gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${notification.type === 'order' ? 'bg-brand-100 dark:bg-brand-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                              {notification.type === 'order' ? (
+                                <Package className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                              ) : (
+                                <Zap className="w-4 h-4 text-red-600 dark:text-red-400" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{notification.title}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{notification.message}</p>
+                              <p className="text-[10px] text-slate-400 mt-1">{notification.time}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="px-4 py-2 border-t border-slate-100 dark:border-dark-700 text-center">
+                    <button className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">View All Notifications</button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Wishlist */}
-          <Link href="/wishlist" className="relative p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-dark-800 rounded-full transition-colors hidden sm:block">
+          <Link href="/customer/wishlist" className="relative p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-dark-800 rounded-full transition-colors hidden sm:block">
             <Heart className="w-5 h-5" />
             {mounted && wishlist.length > 0 && (
               <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-pink-500 border-2 border-white dark:border-[#0f172a] text-[10px] font-bold text-white flex items-center justify-center">
@@ -255,7 +325,7 @@ export default function Header() {
           {/* User Profile Dropdown */}
           <div className="relative">
             <button
-              onClick={() => setProfileOpen(!profileOpen)}
+              onClick={() => { setProfileOpen(!profileOpen); setNotificationsOpen(false); }}
               className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-dark-800 rounded-full transition-colors flex items-center gap-2"
             >
               {mounted && isLoggedIn ? (
@@ -283,13 +353,13 @@ export default function Header() {
                         <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
                       </div>
                       <div className="px-2 space-y-1">
-                        <Link href="/profile" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-dark-700 transition-colors">
+                        <Link href="/customer/profile" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-dark-700 transition-colors">
                           <User className="w-4 h-4 text-slate-400" /> My Account
                         </Link>
-                        <Link href="/orders" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-dark-700 transition-colors">
+                        <Link href="/customer/orders" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-dark-700 transition-colors">
                           <Package className="w-4 h-4 text-slate-400" /> Orders & Returns
                         </Link>
-                        <Link href="/wishlist" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-dark-700 transition-colors sm:hidden">
+                        <Link href="/customer/wishlist" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-dark-700 transition-colors sm:hidden">
                           <Heart className="w-4 h-4 text-slate-400" /> Wishlist
                         </Link>
                       </div>
@@ -301,7 +371,7 @@ export default function Header() {
                     </>
                   ) : (
                     <div className="p-4 flex flex-col gap-3">
-                      <p className="text-sm font-medium text-slate-900 dark:text-white text-center">Welcome to eComm</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white text-center">Welcome to Saumy E-commerce</p>
                       <Link href="/auth/login" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors">
                         Sign In
                       </Link>

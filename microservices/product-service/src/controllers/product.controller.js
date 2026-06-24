@@ -65,31 +65,58 @@ exports.submitForApproval = async (req, res, next) => {
 
 exports.getProducts = async (req, res, next) => {
     try {
-        const { page = 1, limit = 12, search, category, brand, sort, min_price, max_price, min_rating } = req.query;
+        const { page = 1, limit = 12, search, category, brand, sort, min_price, max_price, min_rating, seller_id, status } = req.query;
         
         const cacheKey = `products:page=${page}:limit=${limit}:search=${search}:cat=${category}:brand=${brand}:sort=${sort}:minp=${min_price}:maxp=${max_price}:minr=${min_rating}`;
-        const cachedProducts = await redisClient.get(cacheKey);
-
-        if (cachedProducts) {
-            return res.status(200).json(JSON.parse(cachedProducts));
+        
+        if (!seller_id && !status) {
+            const cachedProducts = await redisClient.get(cacheKey);
+            if (cachedProducts) {
+                return res.status(200).json(JSON.parse(cachedProducts));
+            }
         }
 
-        const query = { status: 'ACTIVE' };
+        const query = {};
+        if (seller_id) {
+            query.seller_id = seller_id;
+        } else {
+            query.status = 'ACTIVE';
+        }
+        if (status) {
+            query.status = status;
+        }
         if (search) query.$text = { $search: search };
         // Support category by ObjectId or by name string
         if (category) {
+            const Category = require('../models/Category');
             if (category.match(/^[0-9a-fA-F]{24}$/)) {
-                query.category_id = category;
+                query.$or = [
+                    { category_id: category },
+                    { subcategory_id: category }
+                ];
             } else {
-                // Match against the 'category' string field stored on the product
-                query.category = { $regex: new RegExp(`^${category}$`, 'i') };
+                const catDoc = await Category.findOne({ name: { $regex: new RegExp(`^${category}$`, 'i') } });
+                if (catDoc) {
+                    query.$or = [
+                        { category_id: catDoc._id },
+                        { subcategory_id: catDoc._id }
+                    ];
+                } else {
+                    return res.json({ success: true, count: 0, products: [] });
+                }
             }
         }
         if (brand) {
             if (brand.match(/^[0-9a-fA-F]{24}$/)) {
                 query.brand_id = brand;
             } else {
-                query.brand = { $regex: new RegExp(`^${brand}$`, 'i') };
+                const Brand = require('../models/Brand');
+                const brandDoc = await Brand.findOne({ name: { $regex: new RegExp(`^${brand}$`, 'i') } });
+                if (brandDoc) {
+                    query.brand_id = brandDoc._id;
+                } else {
+                    query.brand_id = null;
+                }
             }
         }
         // Price range filtering

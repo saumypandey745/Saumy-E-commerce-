@@ -1,14 +1,10 @@
 import axios from 'axios';
 // Removed circular useAppStore import
 
-// We'll fallback to localhost:8000 if NEXT_PUBLIC_API_URL is undefined
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
+// We rely on Next.js rewrites to proxy /api requests to the API Gateway
 export const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: '', // Empty means it uses the current origin which triggers Next.js rewrite
+  withCredentials: true,
   timeout: 10000,
 });
 

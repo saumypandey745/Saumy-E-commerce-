@@ -12,5 +12,10 @@
   "scripts": {
     "start": "docker-compose -f infrastructure/docker-compose.yml up -d",
     "stop": "docker-compose -f infrastructure/docker-compose.yml down"
+  },
+  "dependencies": {
+    "@elastic/elasticsearch": "8.10.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "8.5.0"
   }
 }

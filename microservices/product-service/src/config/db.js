@@ -1,14 +1,21 @@
 const mongoose = require('mongoose');
 const { createClient } = require('redis');
 
-const connectDB = async () => {
-    try {
-        const mongoUri = process.env.MONGO_URI || 'mongodb://admin:adminpassword@localhost:27017/product_db?authSource=admin';
-        await mongoose.connect(mongoUri);
-        console.log('MongoDB connected successfully.');
-    } catch (error) {
-        console.error('MongoDB connection error:', error);
-        process.exit(1);
+const connectDB = async (retries = 10, delay = 3000) => {
+    for (let i = 1; i <= retries; i++) {
+        try {
+            const mongoUri = process.env.MONGO_URI || 'mongodb://admin:adminpassword@localhost:27017/product_db?authSource=admin';
+            await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
+            console.log('MongoDB connected successfully.');
+            return;
+        } catch (error) {
+            console.error(`MongoDB connection attempt ${i}/${retries} failed:`, error.message);
+            if (i === retries) {
+                console.error('All MongoDB connection attempts exhausted. Service will continue without DB (degraded mode).');
+                return; // Don't exit — let the HTTP server stay alive
+            }
+            await new Promise(res => setTimeout(res, delay));
+        }
     }
 };
 

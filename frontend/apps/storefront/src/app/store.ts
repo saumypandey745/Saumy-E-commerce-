@@ -42,14 +42,20 @@ interface AppState {
   isLoggedIn: boolean;
   login: (user: UserInfo) => void;
   logout: () => void;
+  updateUser: (updates: Partial<UserInfo>) => void;
 
   // Wishlist
   wishlist: string[];
+  fetchWishlist: () => Promise<void>;
   toggleWishlist: (id: string) => void;
 
   // Search
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+
+  // Seller Hub
+  storeProfile: any | null;
+  setStoreProfile: (profile: any) => void;
 }
 
 // Load cart from localStorage
@@ -81,11 +87,33 @@ const loadUser = (): { user: UserInfo | null; isLoggedIn: boolean } => {
   return { user: null, isLoggedIn: false };
 };
 
+const loadLanguage = (): Language => {
+  if (typeof window === 'undefined') return 'en';
+  try {
+    const saved = localStorage.getItem('ecomm_lang');
+    return (saved as Language) || 'en';
+  } catch { return 'en'; }
+};
+
+const loadCurrency = (): Currency => {
+  if (typeof window === 'undefined') return 'USD';
+  try {
+    const saved = localStorage.getItem('ecomm_currency');
+    return (saved as Currency) || 'USD';
+  } catch { return 'USD'; }
+};
+
 export const useAppStore = create<AppState>((set, get) => ({
-  language: 'en',
-  currency: 'USD',
-  setLanguage: (language) => set({ language }),
-  setCurrency: (currency) => set({ currency }),
+  language: loadLanguage(),
+  currency: loadCurrency(),
+  setLanguage: (language) => {
+    if (typeof window !== 'undefined') localStorage.setItem('ecomm_lang', language);
+    set({ language });
+  },
+  setCurrency: (currency) => {
+    if (typeof window !== 'undefined') localStorage.setItem('ecomm_currency', currency);
+    set({ currency });
+  },
 
   // Cart
   // Cart
@@ -105,8 +133,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ cart: cartItems });
         if (typeof window !== 'undefined') localStorage.setItem('ecomm_cart', JSON.stringify(cartItems));
       }
-    } catch (e) {
-      console.error('Failed to fetch cart', e);
+    } catch (e: any) {
+      if (e.response?.status !== 401) {
+        console.error('Failed to fetch cart', e);
+      }
     }
   },
   addToCart: async (item) => {
@@ -179,30 +209,100 @@ export const useAppStore = create<AppState>((set, get) => ({
         await api.post('/api/cart/merge', { guestId });
       }
       get().fetchCart();
+      
+      // Fetch wishlist on login, and merge local items if any
+      const localWishlist = get().wishlist;
+      await get().fetchWishlist();
+      
+      // If we had local items, push them to the backend asynchronously
+      if (localWishlist.length > 0) {
+        for (const id of localWishlist) {
+          if (!get().wishlist.includes(id)) {
+            // It's not in the new state fetched from backend, so add it
+            try {
+              await api.post('/api/wishlist/items', { productId: id });
+            } catch(e){}
+          }
+        }
+        // Fetch again to ensure sync
+        get().fetchWishlist();
+      }
     } catch(e) {
-      console.error('Failed to merge cart on login', e);
+      console.error('Failed to merge on login', e);
     }
   },
-  logout: () => {
+  logout: async () => {
+    try {
+      await api.post('/api/auth/logout');
+    } catch (e) {
+      console.error('Logout API failed', e);
+    }
     if (typeof window !== 'undefined') {
       localStorage.removeItem('ecomm_user');
       localStorage.removeItem('ecomm_guest_id'); // force a new guest ID on next request
     }
     set({ user: null, isLoggedIn: false });
     get().clearCart(); // clear local cart
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
+  },
+  updateUser: (updates) => {
+    set((state) => {
+      if (!state.user) return {};
+      const newUser = { ...state.user, ...updates };
+      if (typeof window !== 'undefined') localStorage.setItem('ecomm_user', JSON.stringify(newUser));
+      return { user: newUser };
+    });
   },
 
   // Wishlist
   wishlist: loadWishlist(),
-  toggleWishlist: (id) => set((state) => {
-    const newWishlist = state.wishlist.includes(id)
-      ? state.wishlist.filter((w) => w !== id)
-      : [...state.wishlist, id];
+  fetchWishlist: async () => {
+    try {
+      const res = await api.get('/api/wishlist');
+      if (res.data.success && res.data.data) {
+        // Map over items to extract product_id
+        const itemIds = res.data.data.items.map((item: any) => item.product_id);
+        set({ wishlist: itemIds });
+        if (typeof window !== 'undefined') localStorage.setItem('ecomm_wishlist', JSON.stringify(itemIds));
+      }
+    } catch (e) {
+      console.error('Failed to fetch wishlist', e);
+    }
+  },
+  toggleWishlist: (id) => {
+    const state = get();
+    const isAdding = !state.wishlist.includes(id);
+    const newWishlist = isAdding
+      ? [...state.wishlist, id]
+      : state.wishlist.filter((w) => w !== id);
+    
+    // Optimistic UI update
+    set({ wishlist: newWishlist });
     if (typeof window !== 'undefined') localStorage.setItem('ecomm_wishlist', JSON.stringify(newWishlist));
-    return { wishlist: newWishlist };
-  }),
+
+    // Sync with backend if logged in
+    if (state.isLoggedIn) {
+      if (isAdding) {
+        api.post('/api/wishlist/items', { productId: id }).catch(e => {
+          console.error('Failed to add to wishlist', e);
+          // Revert on failure (optional but good practice)
+          // set({ wishlist: state.wishlist });
+        });
+      } else {
+        api.delete(`/api/wishlist/items/${id}`).catch(e => {
+          console.error('Failed to remove from wishlist', e);
+        });
+      }
+    }
+  },
 
   // Search
   searchQuery: '',
   setSearchQuery: (searchQuery) => set({ searchQuery }),
+
+  // Seller Hub
+  storeProfile: null,
+  setStoreProfile: (profile) => set({ storeProfile: profile }),
 }));

@@ -46,3 +46,48 @@ exports.verifyPurchase = async (req, res, next) => {
         next(error);
     }
 };
+
+exports.getSellerOrders = async (req, res, next) => {
+    try {
+        const orderItems = await OrderItem.findAll({
+            where: { seller_id: req.user.id },
+            include: [{ model: Order, as: 'order', attributes: ['id', 'user_id', 'status', 'total_amount', 'createdAt'] }],
+            order: [['createdAt', 'DESC']]
+        });
+        res.status(200).json({ success: true, items: orderItems });
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.updateOrderStatus = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        
+        const orderItem = await OrderItem.findOne({
+            where: { id, seller_id: req.user.id }
+        });
+        
+        if (!orderItem) return res.status(404).json({ success: false, message: 'Order item not found or unauthorized' });
+        
+        const previousStatus = orderItem.fulfillment_status;
+        orderItem.fulfillment_status = status;
+        await orderItem.save();
+
+        if (status === 'DELIVERED' && previousStatus !== 'DELIVERED') {
+            const { publishEvent } = require('../config/rabbitmq');
+            publishEvent('order.item.delivered', {
+                order_item_id: orderItem.id,
+                order_id: orderItem.order_id,
+                seller_id: orderItem.seller_id,
+                price: orderItem.price,
+                quantity: orderItem.quantity
+            });
+        }
+        
+        res.status(200).json({ success: true, item: orderItem });
+    } catch (error) {
+        next(error);
+    }
+};

@@ -34,7 +34,7 @@ exports.approveProduct = async (req, res, next) => {
         if (keys.length > 0) await redisClient.del(keys);
 
         // Sync with Search Engine
-        publishEvent('event.product.updated', product.toObject());
+        publishEvent('event.product.approved', product.toObject());
 
         res.status(200).json({ success: true, message: 'Product approved successfully', product });
     } catch (error) {

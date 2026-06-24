@@ -1,7 +1,14 @@
+"use client";
+
 import Link from 'next/link';
 import { Facebook, Twitter, Instagram, Youtube, Mail, MapPin, Phone, CreditCard, ShieldCheck, Truck } from 'lucide-react';
+import { useAppStore } from '../app/store';
+import { translations, Language } from '../app/translations';
 
 export default function Footer() {
+  const language = useAppStore((state) => state.language);
+  const t = translations[language as Language];
+
   return (
     <footer className="bg-slate-50 dark:bg-[#0f172a] border-t border-slate-200 dark:border-white/5 pt-16 pb-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -58,10 +65,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           <div>
             <div className="flex items-center space-x-2 mb-6">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-brand-500 to-purple-500 flex items-center justify-center shadow-lg">
-                <span className="font-bold text-white">E</span>
+              <div className="h-8 w-8 rounded-lg bg-white overflow-hidden flex items-center justify-center">
+                <img src="/logo.png" alt="Saumy E-commerce Logo" className="h-full w-full object-contain p-0.5" />
               </div>
-              <span className="font-bold text-xl text-slate-900 dark:text-white">eComm<span className="text-brand-500">.</span></span>
+              <span className="font-bold text-xl text-slate-900 dark:text-white">Saumy E-commerce<span className="text-brand-500">.</span></span>
             </div>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-6 max-w-xs">
               The premium destination for your electronic, fashion, and lifestyle needs. Redefining online shopping globally.
@@ -94,7 +101,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-bold text-slate-900 dark:text-white mb-6 uppercase tracking-wider text-sm">Company</h4>
+            <h4 className="font-bold text-slate-900 dark:text-white mb-6 uppercase tracking-wider text-sm">{t.quickLinks}</h4>
             <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
               <li><Link href="/about" className="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">About Us</Link></li>
               <li><Link href="/careers" className="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Careers</Link></li>
@@ -105,7 +112,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-bold text-slate-900 dark:text-white mb-6 uppercase tracking-wider text-sm">Contact</h4>
+            <h4 className="font-bold text-slate-900 dark:text-white mb-6 uppercase tracking-wider text-sm">{t.contact}</h4>
             <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-400">
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-brand-500 shrink-0 mt-0.5" />
@@ -117,16 +124,16 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-brand-500 shrink-0" />
-                <span>support@ecomm-enterprise.com</span>
+                <span>support@saumy-ecommerce.com</span>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-slate-200 dark:border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-slate-500 dark:text-slate-400 text-center md:text-left">
-            © 2026 E-Comm Enterprise Architecture. All rights reserved. Built with Next.js.
-          </p>
+          <div className="md:col-span-1">
+            {t.rightsReserved}
+          </div>
           <div className="flex gap-4 text-sm text-slate-500 dark:text-slate-400">
             <Link href="/privacy" className="hover:text-slate-900 dark:hover:text-white transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-slate-900 dark:hover:text-white transition-colors">Terms of Service</Link>

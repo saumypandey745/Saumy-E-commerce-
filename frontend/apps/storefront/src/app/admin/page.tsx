@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { api } from '@/lib/api';
-import { translations, Language } from '../translations';
 import { ShieldAlert, Users, Store, Activity, AlertTriangle, CheckCircle, XCircle, Search, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -15,10 +14,12 @@ export default function AdminDashboard() {
     total_revenue: 0,
     total_users: 0,
     total_products: 0,
-    pending_approvals: 0
+    pending_approvals: 0,
+    revenue_trend: []
   });
 
   const [moderationQueue, setModerationQueue] = useState<any[]>([]);
+  const [pendingSellers, setPendingSellers] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -41,9 +42,32 @@ export default function AdminDashboard() {
         console.error('Failed to fetch moderation queue:', e);
       }
     };
+    const fetchPendingSellers = async () => {
+      try {
+        const res = await api.get('/api/admin/sellers/pending').catch(() => ({ data: { success: true, sellers: [] } }));
+        if (res.data.success) {
+          setPendingSellers(res.data.sellers);
+        }
+      } catch (e) {
+        console.error('Failed to fetch pending sellers:', e);
+      }
+    };
     fetchStats();
     fetchModeration();
+    fetchPendingSellers();
   }, []);
+
+  const handleSellerStatusUpdate = async (id: string, status: string) => {
+    try {
+      const res = await api.put(`/api/admin/sellers/${id}/status`, { status });
+      if (res.data.success) {
+        alert(`Seller marked as ${status}`);
+        setPendingSellers(prev => prev.filter(s => s._id !== id));
+      }
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Failed to update seller status');
+    }
+  };
 
   const stats = [
     { label: 'Platform Revenue', value: `$${(statsData.total_revenue / 1000).toFixed(1)}k`, trend: '+18.2%', icon: Activity, color: 'text-brand-500', bg: 'bg-brand-100 dark:bg-brand-900/30' },
@@ -111,21 +135,28 @@ export default function AdminDashboard() {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
-                {/* Global Revenue Chart Mock */}
+                {/* Global Revenue Chart using Real Data */}
                 <div className="lg:col-span-2 bg-white dark:bg-dark-800 rounded-3xl p-6 md:p-8 border border-slate-200 dark:border-dark-700 shadow-sm">
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Platform Revenue (YTD)</h3>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Platform Revenue (Last 7 Days)</h3>
                   <div className="h-64 flex items-end justify-between gap-1 sm:gap-2">
-                    {[30, 45, 40, 60, 55, 80, 75, 90, 85, 100, 95, 110].map((h, i) => (
-                      <div key={i} className="w-full bg-slate-100 dark:bg-dark-900 rounded-t-xl relative group">
-                        <div 
-                          className="absolute bottom-0 w-full bg-slate-800 dark:bg-slate-200 rounded-t-xl transition-all duration-1000 group-hover:bg-brand-500"
-                          style={{ height: `${h}%` }}
-                        ></div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-between mt-4 text-xs sm:text-sm font-bold text-slate-400">
-                    <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+                    {statsData.revenue_trend && statsData.revenue_trend.length > 0 ? (
+                      statsData.revenue_trend.map((trend: any, i: number) => {
+                        // Max value for scaling
+                        const maxRev = Math.max(...statsData.revenue_trend.map((t: any) => t.daily_revenue || 1));
+                        const heightPercent = Math.max(10, ((trend.daily_revenue || 0) / maxRev) * 100);
+                        return (
+                          <div key={i} className="w-full bg-slate-100 dark:bg-dark-900 rounded-t-xl relative group flex flex-col items-center">
+                            <div 
+                              className="absolute bottom-0 w-full bg-brand-400 dark:bg-brand-600 rounded-t-xl transition-all duration-1000 group-hover:bg-brand-500"
+                              style={{ height: `${heightPercent}%` }}
+                            ></div>
+                            <span className="absolute -bottom-6 text-[10px] text-slate-500">{new Date(trend.date).toLocaleDateString(undefined, {weekday: 'short'})}</span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-400">No revenue data available</div>
+                    )}
                   </div>
                 </div>
 
@@ -155,7 +186,57 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {(activeTab === 'users' || activeTab === 'vendors' || activeTab === 'moderation') && (
+          {activeTab === 'vendors' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white dark:bg-dark-800 rounded-3xl border border-slate-200 dark:border-dark-700 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-slate-200 dark:border-dark-700">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Seller Verification Queue</h3>
+                <p className="text-slate-500 text-sm">Review newly onboarded sellers and verify their KYC documents.</p>
+              </div>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-dark-900/50 text-xs uppercase text-slate-500 border-b border-slate-200 dark:border-dark-700">
+                    <th className="p-4 font-bold">Store Name</th>
+                    <th className="p-4 font-bold">Email</th>
+                    <th className="p-4 font-bold">Registration / Tax ID</th>
+                    <th className="p-4 font-bold">Documents</th>
+                    <th className="p-4 font-bold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                  {pendingSellers.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-slate-500">No pending seller registrations.</td>
+                    </tr>
+                  ) : (
+                    pendingSellers.map(seller => (
+                      <tr key={seller._id} className="border-b border-slate-200 dark:border-dark-700 hover:bg-slate-50 dark:hover:bg-dark-900/20">
+                        <td className="p-4 font-bold text-slate-900 dark:text-white">{seller.store_name}</td>
+                        <td className="p-4 text-slate-500">{seller.contact_email}</td>
+                        <td className="p-4 font-mono text-slate-500">{seller.business_registration_number} <br/> <span className="text-xs">{seller.tax_id}</span></td>
+                        <td className="p-4">
+                          {seller.documents && seller.documents.length > 0 ? (
+                            <div className="flex gap-2">
+                              {seller.documents.map((doc: any, i: number) => (
+                                <a key={i} href={doc.url} target="_blank" rel="noreferrer" className="text-brand-600 hover:underline text-xs font-bold">Doc {i+1}</a>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-orange-500 font-bold">No Docs Uploaded</span>
+                          )}
+                        </td>
+                        <td className="p-4 flex gap-2">
+                          <button onClick={() => handleSellerStatusUpdate(seller._id, 'APPROVED')} className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-all">Approve</button>
+                          <button onClick={() => handleSellerStatusUpdate(seller._id, 'REJECTED')} className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-all">Reject</button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </motion.div>
+          )}
+
+          {(activeTab === 'users' || activeTab === 'moderation') && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center p-20 bg-white dark:bg-dark-800 rounded-3xl border border-slate-200 dark:border-dark-700 border-dashed text-center">
               <ShieldAlert className="w-16 h-16 text-slate-300 dark:text-dark-600 mb-4" />
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Administrative Sandbox</h2>

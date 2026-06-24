@@ -31,6 +31,10 @@ const OrderItem = sequelize.define('OrderItem', {
     price_at_purchase: {
         type: DataTypes.FLOAT,
         allowNull: false,
+    },
+    fulfillment_status: {
+        type: DataTypes.ENUM('PENDING', 'ACCEPTED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURN_REQUESTED', 'RETURNED'),
+        defaultValue: 'PENDING',
     }
 }, {
     timestamps: true,

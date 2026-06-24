@@ -1,0 +1,22 @@
+{
+  "name": "monitoring-service",
+  "version": "1.0.0",
+  "description": "Enterprise Observability & Real-Time Telemetry Hub",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "redis": "^4.6.7",
+    "mongoose": "^7.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "axios": "^1.4.0",
+    "dockerode": "^3.3.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

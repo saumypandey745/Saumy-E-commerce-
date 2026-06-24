@@ -7,6 +7,8 @@ import { translations, Language } from '../../translations';
 import { User, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+// @ts-ignore
+import { GoogleLogin } from '@react-oauth/google';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,6 +18,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'CUSTOMER' | 'SELLER'>('CUSTOMER');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,18 +27,77 @@ export default function LoginPage() {
     try {
       const response = await api.post('/api/auth/login', { email, password });
       if (response.data.success) {
+        const token = response.data.accessToken || response.data.token;
+        const role = response.data.user.role || 'CUSTOMER';
+        
+        if (selectedRole === 'SELLER' && role !== 'SELLER' && role !== 'ADMIN') {
+          alert('You do not have a Seller account. Please create one.');
+          router.push('/auth/register');
+          return;
+        }
+
         login({
           id: response.data.user.id,
           name: response.data.user.name || email.split('@')[0],
           email: response.data.user.email,
-          token: response.data.token
+          token: token,
+          role: role
         });
-        router.push('/');
+
+        if (role === 'ADMIN') {
+          router.push('/admin');
+        } else if (role === 'SELLER') {
+          router.push('/seller/dashboard');
+        } else {
+          router.push('/');
+        }
       } else {
         alert(response.data.message || 'Login failed');
       }
     } catch (error: any) {
       alert(error.response?.data?.message || 'Authentication error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setIsLoading(true);
+    try {
+      const response = await api.post('/api/auth/google', {
+        credential: credentialResponse.credential,
+      });
+
+      if (response.data.success) {
+        const token = response.data.accessToken || response.data.token;
+        const role = response.data.user.role || 'CUSTOMER';
+
+        if (selectedRole === 'SELLER' && role !== 'SELLER' && role !== 'ADMIN') {
+          alert('You do not have a Seller account. Please create one.');
+          router.push('/auth/register');
+          return;
+        }
+
+        login({
+          id: response.data.user.id,
+          name: response.data.user.name || response.data.user.email.split('@')[0],
+          email: response.data.user.email,
+          token: token,
+          role: role
+        });
+
+        if (role === 'ADMIN') {
+          router.push('/admin');
+        } else if (role === 'SELLER') {
+          router.push('/seller/dashboard');
+        } else {
+          router.push('/');
+        }
+      } else {
+        alert(response.data.message || 'Google login failed');
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Google authentication error');
     } finally {
       setIsLoading(false);
     }
@@ -50,22 +112,67 @@ export default function LoginPage() {
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900 dark:text-white">
-          {language === 'en' ? 'Sign in to your account' : 'Zaloguj się na swoje konto'}
+          {t.loginTitle}
         </h2>
         <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">
-          {language === 'en' ? 'Or' : 'Lub'}{' '}
+          Or{' '}
           <Link href="/auth/register" className="font-medium text-brand-600 hover:text-brand-500 transition-colors">
-            {language === 'en' ? 'start your 14-day free trial' : 'rozpocznij 14-dniowy okres próbny'}
+            {t.createAccount}
           </Link>
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white dark:bg-dark-800 py-8 px-4 shadow-xl sm:rounded-2xl sm:px-10 border border-slate-200 dark:border-dark-700">
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <button
+              type="button"
+              onClick={() => setSelectedRole('CUSTOMER')}
+              className={`py-3 text-center text-sm font-semibold rounded-xl border transition-all ${
+                selectedRole === 'CUSTOMER'
+                  ? 'bg-brand-600 border-brand-600 text-white shadow-sm shadow-brand-500/20'
+                  : 'border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-dark-700/50'
+              }`}
+            >
+              Customer Login
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedRole('SELLER')}
+              className={`py-3 text-center text-sm font-semibold rounded-xl border transition-all ${
+                selectedRole === 'SELLER'
+                  ? 'bg-brand-600 border-brand-600 text-white shadow-sm shadow-brand-500/20'
+                  : 'border-slate-200 dark:border-dark-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-dark-700/50'
+              }`}
+            >
+              Seller Login
+            </button>
+          </div>
+
+          <div className="mb-6 flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => {
+                alert('Google Login Failed');
+              }}
+            />
+          </div>
+          
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-300 dark:border-dark-600" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white dark:bg-dark-800 text-slate-500">
+                Or sign in with email
+              </span>
+            </div>
+          </div>
+
           <form className="space-y-6" onSubmit={handleLogin}>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                {language === 'en' ? 'Email address' : 'Adres email'}
+                {t.email}
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -84,7 +191,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                {language === 'en' ? 'Password' : 'Hasło'}
+                {t.password}
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -109,13 +216,13 @@ export default function LoginPage() {
                   className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-slate-300 rounded"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-900 dark:text-slate-300">
-                  {language === 'en' ? 'Remember me' : 'Zapamiętaj mnie'}
+                  Remember me
                 </label>
               </div>
 
               <div className="text-sm">
                 <a href="#" className="font-medium text-brand-600 hover:text-brand-500">
-                  {language === 'en' ? 'Forgot password?' : 'Zapomniałeś hasła?'}
+                  Forgot password?
                 </a>
               </div>
             </div>
@@ -136,7 +243,7 @@ export default function LoginPage() {
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    {language === 'en' ? 'Sign in via Gateway' : 'Zaloguj przez Gateway'}
+                    {t.signIn}
                     <ArrowRight className="w-4 h-4" />
                   </span>
                 )}

@@ -2,7 +2,8 @@
 
 import { ShoppingCart, Heart } from 'lucide-react'
 import { useAppStore } from '../app/store'
-import { conversionRates, currencySymbols } from '../app/translations'
+import { getValidImageUrl } from '../lib/imageFallback';
+import { translations, Language, conversionRates, currencySymbols, Currency } from '../app/translations'
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
@@ -17,10 +18,12 @@ interface Product {
 }
 
 export default function ProductCard({ product }: { product: Product }) {
+  const language = useAppStore((state) => state.language);
+  const t = translations[language as Language];
   const { currency, addToCart, wishlist, toggleWishlist } = useAppStore();
   
-  const rate = conversionRates[currency] || 1;
-  const symbol = currencySymbols[currency] || '$';
+  const rate = conversionRates[currency as Currency] || 1;
+  const symbol = currencySymbols[currency as Currency] || '$';
   const baseVal = product.base_price !== undefined ? product.base_price : product.price;
   const displayPrice = (baseVal * rate).toFixed(2);
 
@@ -41,7 +44,7 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* Wishlist Button */}
       <motion.button 
         whileTap={{ scale: 0.8 }}
-        onClick={(e) => { e.preventDefault(); toggleWishlist(product.id); }}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product.id); }}
         className="absolute top-4 right-4 z-20 p-2 rounded-full bg-white/50 dark:bg-dark-900/50 backdrop-blur-md border border-slate-200 dark:border-white/10 opacity-0 transform translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 hover:bg-white dark:hover:bg-dark-900"
       >
         <Heart className={`w-4 h-4 ${isLiked ? 'fill-pink-500 text-pink-500' : 'text-slate-600 dark:text-slate-300'}`} />
@@ -50,9 +53,10 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* Image Container */}
       <Link href={`/products/${product.id}`} className="block relative aspect-[4/5] overflow-hidden bg-slate-100 dark:bg-dark-900">
         <img 
-          src={product.image} 
+          src={getValidImageUrl(product.image, product.category || product.title)} 
+          onError={(e) => { e.currentTarget.src = `https://placehold.co/800x800/png?text=${encodeURIComponent(product.category || product.title || 'Product')}`; }}
           alt={product.title} 
-          className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110 mix-blend-multiply dark:mix-blend-normal"
+          className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
           loading="lazy"
         />
         
@@ -62,6 +66,7 @@ export default function ProductCard({ product }: { product: Product }) {
              whileTap={{ scale: 0.95 }}
              onClick={(e) => {
                e.preventDefault();
+               e.stopPropagation();
                addToCart({
                  id: product.id,
                  title: product.title,
@@ -73,7 +78,7 @@ export default function ProductCard({ product }: { product: Product }) {
              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white/90 dark:bg-dark-900/90 backdrop-blur-md border border-slate-200 dark:border-dark-700 text-brand-600 dark:text-brand-400 font-bold hover:bg-brand-600 hover:text-white dark:hover:bg-brand-500 dark:hover:text-white transition-colors shadow-lg"
            >
               <ShoppingCart className="w-4 h-4" />
-              Add to Cart
+              {t.addToCart}
            </motion.button>
         </div>
       </Link>

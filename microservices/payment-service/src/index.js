@@ -4,6 +4,7 @@ require('dotenv').config();
 const { connectDB } = require('./config/db');
 const { connectRabbitMQ, getBrokerMode } = require('./config/rabbitmq');
 const { startPaymentConsumer } = require('./consumers/payment.consumer');
+const { startSellerConsumer } = require('./consumers/seller.consumer');
 const paymentRoutes = require('./routes/payment.routes');
 const { errorHandler } = require('@ecommerce/shared');
 
@@ -11,11 +12,15 @@ const app = express();
 const PORT = process.env.PORT || 8006;
 
 app.use(cors());
+
+const webhookRoutes = require('./routes/webhook.routes');
+app.use('/webhook', express.raw({type: 'application/json'}), webhookRoutes);
 app.use(express.json());
 
 connectDB();
 connectRabbitMQ().then(() => {
     startPaymentConsumer();
+    startSellerConsumer();
 });
 
 app.use('/', paymentRoutes);

@@ -4,23 +4,52 @@ exports.searchCatalog = async (req, res, next) => {
     try {
         const { q, category, brand, minPrice, maxPrice, page = 1, limit = 10 } = req.query;
 
-        // Build Elasticsearch query
-        const searchParams = {
-            index: 'products',
-            query: q,
-            filters: {}
+        // Build Elasticsearch DSL query
+        const body = {
+            query: {
+                bool: {
+                    must: [],
+                    filter: []
+                }
+            },
+            aggs: {
+                categories: { terms: { field: "category.keyword" } },
+                brands: { terms: { field: "brand.keyword" } }
+            }
         };
 
-        if (category) searchParams.filters.category = category;
-        if (brand) searchParams.filters.brand = brand;
-        if (minPrice) searchParams.filters.minPrice = minPrice;
-        if (maxPrice) searchParams.filters.maxPrice = maxPrice;
+        // Typo-tolerant search
+        if (q) {
+            body.query.bool.must.push({
+                multi_match: {
+                    query: q,
+                    fields: ["title^3", "description", "category", "brand"],
+                    fuzziness: "AUTO"
+                }
+            });
+        } else {
+            body.query.bool.must.push({ match_all: {} });
+        }
 
-        const result = await esClient.search(searchParams);
+        // Filters
+        if (category) body.query.bool.filter.push({ term: { "category.keyword": category } });
+        if (brand) body.query.bool.filter.push({ term: { "brand.keyword": brand } });
+        
+        if (minPrice || maxPrice) {
+            const priceFilter = { range: { base_price: {} } };
+            if (minPrice) priceFilter.range.base_price.gte = parseFloat(minPrice);
+            if (maxPrice) priceFilter.range.base_price.lte = parseFloat(maxPrice);
+            body.query.bool.filter.push(priceFilter);
+        }
 
-        // Pagination
         const from = (parseInt(page) - 1) * parseInt(limit);
-        const paginatedHits = result.hits.hits.slice(from, from + parseInt(limit));
+
+        const result = await esClient.search({
+            index: 'products',
+            from,
+            size: parseInt(limit),
+            body
+        });
 
         res.status(200).json({
             success: true,
@@ -28,8 +57,8 @@ exports.searchCatalog = async (req, res, next) => {
                 total: result.hits.total.value,
                 page: parseInt(page),
                 limit: parseInt(limit),
-                products: paginatedHits.map(hit => hit._source),
-                facets: result.aggregations // For frontend filters (Brands/Categories counts)
+                products: result.hits.hits.map(hit => hit._source),
+                facets: result.aggregations
             }
         });
 

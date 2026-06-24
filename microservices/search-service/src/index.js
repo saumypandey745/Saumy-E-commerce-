@@ -16,6 +16,14 @@ connectRabbitMQ().then(() => {
     startSyncConsumer();
 });
 
+// Run Initial Search Index Synchronization
+const syncProducts = require('./syncProducts');
+syncProducts().then(() => {
+    console.log('[Search Engine Service] Initial product synchronization complete.');
+}).catch((err) => {
+    console.error('[Search Engine Service] Initial product synchronization failed:', err);
+});
+
 // Routes
 app.use('/', searchRoutes);
 

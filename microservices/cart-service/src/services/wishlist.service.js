@@ -16,8 +16,8 @@ class WishlistService {
     async addItem(userId, productId) {
         let productData;
         try {
-            const response = await axios.get(`${PRODUCT_SERVICE_URL}/api/products/${productId}`);
-            productData = response.data.data || response.data;
+            const response = await axios.get(`${PRODUCT_SERVICE_URL}/${productId}`);
+            productData = response.data.product || response.data.data || response.data;
         } catch (error) {
             throw new Error('Product not found');
         }

@@ -28,7 +28,7 @@ const connectDB = async () => {
         await sequelize.authenticate();
         console.log(`Database connected successfully using ${dbDialect}.`);
         // Sync models (for dev only, use migrations in production)
-        await sequelize.sync({ force: true });
+        await sequelize.sync();
     } catch (error) {
         console.error('Unable to connect to the database:', error);
         process.exit(1);

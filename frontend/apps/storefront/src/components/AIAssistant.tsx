@@ -106,7 +106,7 @@ export default function AIAssistant() {
                 </div>
                 <div>
                   <h3 className="font-bold text-sm">AI Shopping Assistant</h3>
-                  <p className="text-[10px] text-brand-100 font-medium">Powered by eComm ML Engine</p>
+                  <p className="text-[10px] text-brand-100 font-medium">Powered by Saumy ML Engine</p>
                 </div>
               </div>
               <button 

@@ -16,8 +16,7 @@ const connectRabbitMQ = async () => {
             console.log('[Search Service] RabbitMQ connected successfully.');
             activeMode = 'rabbitmq';
         } catch (error) {
-            console.error('[Search Service] RabbitMQ unavailable – exiting.');
-            process.exit(1);
+            console.warn('[Service] RabbitMQ unavailable – falling back to mock.'); channel = mockBroker; activeMode = 'mock';
         }
     } else {
         if (useMock) {

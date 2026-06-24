@@ -8,10 +8,19 @@ const authRoutes = require('./routes/auth.routes');
 const { errorHandler } = require('@ecommerce/shared');
 
 const app = express();
+app.set('trust proxy', true);
 const PORT = process.env.PORT || 8001;
 
 // Connect Database
-connectDB();
+connectDB().then(() => {
+    console.log('[Auth Service] Database connected. Starting seeder check...');
+    const seed = require('./seed');
+    return seed();
+}).then(() => {
+    console.log('[Auth Service] Seeder check completed successfully.');
+}).catch((err) => {
+    console.error('[Auth Service] Error during database/seeder startup:', err);
+});
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());

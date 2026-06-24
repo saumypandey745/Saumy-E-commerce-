@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAppStore } from '../store';
 import { Store, ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -9,17 +9,21 @@ import { motion } from 'framer-motion';
 export default function SellerLayout({ children }: { children: React.ReactNode }) {
   const { isLoggedIn, user } = useAppStore();
   const router = useRouter();
+  const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     // Enforce that the user role must be SELLER or ADMIN.
-    if (isLoggedIn && user?.role !== 'SELLER' && user?.role !== 'ADMIN') {
+    if (pathname !== '/seller' && isLoggedIn && user?.role !== 'SELLER' && user?.role !== 'ADMIN') {
       router.push('/');
     }
-  }, [isLoggedIn, user, router]);
+  }, [isLoggedIn, user, router, pathname]);
 
   if (!mounted) return null;
+
+  // Do not block the marketing page
+  if (pathname === '/seller') return <>{children}</>;
 
   if (!isLoggedIn || (user?.role !== 'SELLER' && user?.role !== 'ADMIN')) {
     return (

@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
+import { getValidImageUrl } from '@/lib/imageFallback';
 import ProductCardSkeleton from '@/components/ProductCardSkeleton';
 import { useAppStore } from '../store';
 import { SlidersHorizontal, ChevronDown, Check, X, Search, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const CATEGORIES = ['All', 'Audio', 'Peripherals', 'Wearables', 'Workspace', 'Gaming', 'Photography', 'Computers', 'Accessories', 'Electronics', 'Furniture'];
+const CATEGORIES = ['All', 'Trending', 'Smartphones', 'Laptops', 'Headphones', 'Smart Watches', 'Gaming Accessories', 'Cameras', 'Home & Kitchen', 'Furniture', 'Fashion'];
 const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },
   { value: 'price_asc', label: 'Price: Low to High' },
@@ -20,6 +22,9 @@ const SORT_OPTIONS = [
 export default function ProductsPage() {
   const { language } = useAppStore();
   
+  const searchParams = useSearchParams();
+  const catParam = searchParams.get('cat');
+  
   // Filtering States
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +32,26 @@ export default function ProductsPage() {
   
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
+  
+  const [activeCategory, setActiveCategory] = useState(() => {
+    if (catParam) {
+      if (catParam.toLowerCase() === 'trending') return 'Trending';
+      const matched = CATEGORIES.find(c => c.toLowerCase() === catParam.toLowerCase());
+      return matched || (catParam.charAt(0).toUpperCase() + catParam.slice(1));
+    }
+    return 'All';
+  });
+
+  useEffect(() => {
+    if (catParam) {
+      if (catParam.toLowerCase() === 'trending') {
+        setActiveCategory('Trending');
+      } else {
+        const matched = CATEGORIES.find(c => c.toLowerCase() === catParam.toLowerCase());
+        setActiveCategory(matched || (catParam.charAt(0).toUpperCase() + catParam.slice(1)));
+      }
+    }
+  }, [catParam]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 3000]);
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState('featured');
@@ -86,7 +110,10 @@ export default function ProductsPage() {
            title: p.title,
            price: p.base_price,
            base_price: p.base_price,
-           image: p.images && p.images.length > 0 ? p.images[0] : 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800',
+           image: getValidImageUrl(
+            p.images && p.images.length > 0 ? (typeof p.images[0] === 'string' ? p.images[0] : p.images[0].url) : p.image,
+            p.category ? p.category.name || p.category : p.title
+          ),
            category: p.category,
            rating: p.average_rating || 4.5,
            reviews: p.review_count || 0,
@@ -235,19 +262,27 @@ export default function ProductsPage() {
               {/* Price Range */}
               <div className="mb-8">
                 <h4 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-xs mb-4">Price Range</h4>
-                <div className="px-2">
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="3000" 
-                    step="50"
-                    value={priceRange[1]}
-                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                    className="w-full h-2 bg-slate-200 dark:bg-dark-700 rounded-lg appearance-none cursor-pointer accent-brand-500"
-                  />
-                  <div className="flex items-center justify-between mt-4 text-sm font-bold text-slate-700 dark:text-slate-300">
-                    <span>${priceRange[0]}</span>
-                    <span>${priceRange[1]}</span>
+                <div className="flex items-center gap-3">
+                  <div className="relative w-1/2">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={priceRange[0]}
+                      onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
+                      className="w-full pl-7 pr-3 py-2 bg-slate-100 dark:bg-dark-900 border border-transparent rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                    />
+                  </div>
+                  <span className="text-slate-400 font-bold">-</span>
+                  <div className="relative w-1/2">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={priceRange[1]}
+                      onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 0])}
+                      className="w-full pl-7 pr-3 py-2 bg-slate-100 dark:bg-dark-900 border border-transparent rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                    />
                   </div>
                 </div>
               </div>

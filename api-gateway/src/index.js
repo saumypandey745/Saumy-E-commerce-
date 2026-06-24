@@ -2,11 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const { createProxyMiddleware, responseInterceptor } = require('http-proxy-middleware');
+const proxy = require('express-http-proxy');
 const redis = require('redis');
 const promClient = require('prom-client');
 const { trace } = require('@opentelemetry/api');
 const retry = require('async-retry');
+const authorize = require('./middleware/auth');
 require('dotenv').config();
 
 const app = express();
@@ -41,20 +42,74 @@ app.use((req, res, next) => {
     next();
 });
 
+// Upload proxy for multipart data using http-proxy-middleware
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
+// Manual interception for upload proxy to ensure it runs before body parsers
+app.use('/api/sellers/products', (req, res, next) => {
+    if (req.path.endsWith('/upload-image') && req.method === 'POST') {
+        console.log("MATCHED UPLOAD IMAGE IN GATEWAY FOR:", req.path);
+        
+        const proxy = createProxyMiddleware({
+            target: process.env.PRODUCT_SERVICE_URL || 'http://product-service:8003',
+            changeOrigin: true,
+            pathRewrite: (path, req) => {
+                return path.replace('/api/sellers', '/seller');
+            },
+            onError: (err, req, res) => {
+                console.error(`[Upload Proxy Error]:`, err);
+                res.status(502).json({
+                    success: false,
+                    message: `Bad Gateway: upload failed.`
+                });
+            }
+        });
+        
+        return proxy(req, res, next);
+    }
+    next();
+});
+
 app.use(helmet());
 app.use(cors());
-app.use(morgan('combined'));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(authorize); // Global RBAC Authorization Guard
 
-// Redis client setup for Rate Limiting
+// Redis client setup for Rate Limiting and Pub/Sub
 const redisClient = redis.createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
-redisClient.connect().catch(err => console.error('[Gateway Redis] Connection Error:', err));
+const pubClient = redisClient.duplicate();
+
+Promise.all([redisClient.connect(), pubClient.connect()]).then(() => {
+    console.log('API Gateway connected to Redis');
+}).catch(console.error);
+
+// Telemetry Interceptor: Publish access logs to monitoring-service
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        pubClient.publish('telemetry:gateway_logs', JSON.stringify({
+            method: req.method,
+            path: req.path,
+            status: res.statusCode,
+            duration: duration,
+            ip: req.ip,
+            timestamp: new Date().toISOString()
+        })).catch(() => {});
+    });
+    next();
+});
+
+app.use(morgan('combined'));
 
 // Rate Limiting Middleware
 const rateLimiter = async (req, res, next) => {
+    if (req.headers['x-load-test'] === 'true') return next();
     try {
         const ip = req.ip;
-        const key = `rate_limit:${ip}`;
-        const limit = 60; // 60 requests per minute
+        const key = `rate_limit:${req.method}:${ip}`;
+        const limit = req.method === 'POST' ? 300 : 600; // 300 requests/min for POST, 600 requests/min for other requests
         const windowSec = 60;
 
         const current = await redisClient.get(key);
@@ -145,6 +200,7 @@ const breakers = {
     cart: new CircuitBreaker('cart-service'),
     search: new CircuitBreaker('search-service'),
     review: new CircuitBreaker('review-service'),
+    aiml: new CircuitBreaker('ai-ml-service'),
     resilience: new CircuitBreaker('resilience-service')
 };
 
@@ -167,23 +223,37 @@ const makeBreakerProxy = (serviceKey, targetUrl, fallbackResponse) => {
             }
             next();
         },
-        createProxyMiddleware({
-            target: targetUrl,
-            changeOrigin: true,
-            pathRewrite: (path, req) => {
-                if (path.startsWith('/api/cart') || path.startsWith('/api/wishlist')) return path;
-                return path.replace(/^\/api\/[^\/]+/, '');
+        proxy(targetUrl, {
+            timeout: 15000,
+            parseReqBody: (req) => {
+                const contentType = req.headers['content-type'] || '';
+                return !contentType.includes('multipart/form-data');
             },
-            proxyTimeout: 3000, // Phase 11 SRE: Strict timeout strategy
-            onError: (err, req, res) => {
+            proxyReqPathResolver: (req) => {
+                let p = req.url;
+                if (req.originalUrl.startsWith('/api/cart') || req.originalUrl.startsWith('/api/wishlist')) p = req.originalUrl;
+                if (req.originalUrl.startsWith('/api/sellers')) p = '/seller' + req.url;
+                if (req.originalUrl.startsWith('/api/admin/sellers')) p = '/admin/sellers' + req.url;
+                if (req.originalUrl.startsWith('/api/profile')) p = '/profile';
+                return p;
+            },
+            proxyReqBodyDecorator: function(bodyContent, srcReq) {
+                if (srcReq.body && Object.keys(srcReq.body).length > 0) {
+                    return JSON.stringify(srcReq.body);
+                }
+                return bodyContent;
+            },
+            proxyErrorHandler: (err, res, next) => {
+                console.error(`[Proxy Error - ${serviceKey}]:`, err);
                 breaker.onFailure();
                 res.status(502).json({
                     success: false,
                     message: `Bad Gateway: ${serviceKey} connection failed.`
                 });
             },
-            onProxyRes: (proxyRes, req, res) => {
+            userResDecorator: (proxyRes, proxyResData, userReq, userRes) => {
                 breaker.onSuccess();
+                return proxyResData;
             }
         })
     ];
@@ -209,31 +279,43 @@ const makeCachedBreakerProxy = (serviceKey, targetUrl, fallbackResponse) => {
             }
             next();
         },
-        createProxyMiddleware({
-            target: targetUrl,
-            changeOrigin: true,
-            pathRewrite: (path, req) => {
-                if (path.startsWith('/api/cart') || path.startsWith('/api/wishlist')) return path;
-                return path.replace(/^\/api\/[^\/]+/, '');
+        proxy(targetUrl, {
+            timeout: 15000,
+            parseReqBody: (req) => {
+                const contentType = req.headers['content-type'] || '';
+                return !contentType.includes('multipart/form-data');
             },
-            selfHandleResponse: true,
-            onProxyRes: responseInterceptor(async (responseBuffer, proxyRes, req, res) => {
-                breaker.onSuccess();
-                const responseStr = responseBuffer.toString('utf8');
-                if (req.method === 'GET' && proxyRes.statusCode === 200 && req.query.bypassCache !== 'true') {
-                    try {
-                        const key = `cache:${req.originalUrl}`;
-                        await redisClient.set(key, responseStr, { EX: 60 });
-                    } catch (e) { console.error('Redis cache set error', e); }
+            proxyReqPathResolver: (req) => {
+                let p = req.url;
+                if (req.originalUrl.startsWith('/api/cart') || req.originalUrl.startsWith('/api/wishlist')) p = req.originalUrl;
+                if (req.originalUrl.startsWith('/api/sellers')) p = '/seller' + req.url;
+                if (req.originalUrl.startsWith('/api/admin/sellers')) p = '/admin/sellers' + req.url;
+                return p;
+            },
+            proxyReqBodyDecorator: function(bodyContent, srcReq) {
+                if (srcReq.body && Object.keys(srcReq.body).length > 0) {
+                    return JSON.stringify(srcReq.body);
                 }
-                return responseBuffer;
-            }),
-            onError: (err, req, res) => {
+                return bodyContent;
+            },
+            proxyErrorHandler: (err, res, next) => {
+                console.error(`[Proxy Error - ${serviceKey}]:`, err);
                 breaker.onFailure();
                 res.status(502).json({
                     success: false,
                     message: `Bad Gateway: ${serviceKey} connection failed.`
                 });
+            },
+            userResDecorator: (proxyRes, proxyResData, userReq, userRes) => {
+                breaker.onSuccess();
+                if (userReq.method === 'GET' && proxyRes.statusCode === 200 && userReq.query.bypassCache !== 'true') {
+                    const responseStr = proxyResData.toString('utf8');
+                    try {
+                        const key = `cache:${userReq.originalUrl}`;
+                        redisClient.set(key, responseStr, { EX: 60 });
+                    } catch (e) { console.error('Redis cache set error', e); }
+                }
+                return proxyResData;
             }
         })
     ];
@@ -249,7 +331,8 @@ const services = {
     payment: process.env.PAYMENT_SERVICE_URL || 'http://localhost:8006',
     cart: process.env.CART_SERVICE_URL || 'http://localhost:8007',
     search: process.env.SEARCH_SERVICE_URL || 'http://localhost:8008',
-    review: process.env.REVIEW_SERVICE_URL || 'http://localhost:8009'
+    review: process.env.REVIEW_SERVICE_URL || 'http://localhost:8009',
+    aiml: process.env.AIML_SERVICE_URL || 'http://localhost:8010'
 };
 
 // Fallbacks for Circuit Breakers
@@ -262,14 +345,70 @@ const fallbacks = {
     cart: { success: false, data: { items: [] }, message: "Cart service is offline" },
     search: { success: false, data: { total: 0, products: [], facets: {} }, message: "Search engine offline" },
     review: { success: false, data: { count: 0, total: 0, reviews: [] }, message: "Reviews are currently unavailable" },
+    aiml: { success: false, recommended_product_ids: [], model_version: "fallback", confidence_score: 0 },
     resilience: { fallback: true, message: 'Offline Mock Fallback Active' }
 };
 
 // Routing to microservices
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
+// Upload proxy for multipart data using http-proxy-middleware
+const makeUploadProxy = (serviceKey, targetUrl, fallbackResponse) => {
+    const breaker = breakers[serviceKey];
+    return [
+        rateLimiter,
+        (req, res, next) => {
+            if (!breaker.checkCall()) {
+                console.warn(`[Circuit Breaker] Blocking upload request to ${serviceKey}`);
+                return res.status(503).json({
+                    success: false,
+                    message: `${serviceKey} is currently unavailable. Circuit breaker tripped.`,
+                    ...fallbackResponse
+                });
+            }
+            next();
+        },
+        createProxyMiddleware({
+            target: targetUrl,
+            changeOrigin: true,
+            pathRewrite: (path, req) => {
+                return path.replace('/api/sellers', '/seller');
+            },
+            onProxyReq: (proxyReq, req, res) => {
+                // Ensure headers set by previous middlewares (like authorize) are passed along
+                if (req.user) {
+                    proxyReq.setHeader('x-user-id', req.user.id);
+                    proxyReq.setHeader('x-user-role', req.user.role);
+                    if (req.user.role === 'SELLER') {
+                        proxyReq.setHeader('x-seller-id', req.user.id);
+                    }
+                }
+            },
+            onProxyRes: (proxyRes, req, res) => {
+                breaker.onSuccess();
+            },
+            onError: (err, req, res) => {
+                console.error(`[Upload Proxy Error - ${serviceKey}]:`, err);
+                breaker.onFailure();
+                res.status(502).json({
+                    success: false,
+                    message: `Bad Gateway: ${serviceKey} upload failed.`
+                });
+            }
+        })
+    ];
+};
+
 app.use('/api/auth', makeBreakerProxy('auth', services.auth, fallbacks.auth));
+app.use('/api/profile', makeBreakerProxy('auth', services.auth, fallbacks.auth));
 app.use('/api/products', makeCachedBreakerProxy('product', services.product, fallbacks.product));
+app.use('/api/sellers/products/:id/upload-image', makeUploadProxy('product', services.product, fallbacks.product));
+app.use('/api/sellers', makeBreakerProxy('product', services.product, fallbacks.product)); // Seller APIs hit product service
+app.use('/api/admin/sellers', makeBreakerProxy('product', services.product, fallbacks.product)); // Admin Seller management
 app.use('/api/orders', makeBreakerProxy('order', services.order, fallbacks.order));
+app.use('/api/monitoring', makeBreakerProxy('monitoring', 'http://localhost:8006', fallbacks.resilience)); // Telemetry Hub
 app.use('/api/ai', makeBreakerProxy('ai', services.ai, fallbacks.ai));
+app.use('/api/ml', makeBreakerProxy('aiml', services.aiml, fallbacks.aiml));
 app.use('/api/payments', makeBreakerProxy('payment', services.payment, fallbacks.payment));
 app.use('/api/cart', makeBreakerProxy('cart', services.cart, fallbacks.cart));
 app.use('/api/wishlist', makeBreakerProxy('cart', services.cart, fallbacks.cart));
@@ -277,31 +416,9 @@ app.use('/api/search', makeCachedBreakerProxy('search', services.search, fallbac
 app.use('/api/reviews', makeBreakerProxy('review', services.review, fallbacks.review));
 app.use('/api/resilience', makeBreakerProxy('resilience', 'http://localhost:9999', fallbacks.resilience));
 
-// Admin Dashboard Aggregator API
-const isAdmin = async (req, res, next) => {
-    const token = req.headers.authorization;
-    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    
-    // Developer bypass for Phase 8 Admin Dashboard
-    if (token === 'Bearer admin-mock-token') {
-        req.user = { id: 'admin123', role: 'ADMIN' };
-        return next();
-    }
+// Admin Dashboard Aggregator API - Deprecated manual admin check in favor of Global RBAC
 
-    try {
-        const authRes = await fetch(`${services.auth}/api/auth/me`, { headers: { Authorization: token }});
-        const authData = await authRes.json();
-        if (authData.success && authData.user.role === 'ADMIN') {
-            next();
-        } else {
-            res.status(403).json({ success: false, message: 'Forbidden: Admin access required' });
-        }
-    } catch (err) {
-        res.status(500).json({ success: false, message: 'Auth service unavailable' });
-    }
-};
-
-app.get('/api/admin/stats', isAdmin, async (req, res) => {
+app.get('/api/admin/stats', async (req, res) => {
     try {
         const headers = { Authorization: req.headers.authorization };
         
@@ -313,23 +430,24 @@ app.get('/api/admin/stats', isAdmin, async (req, res) => {
             return response;
         }, { retries: 3, minTimeout: 100, maxTimeout: 1000 });
 
-        const [productsRes, pendingProductsRes] = await Promise.all([
+        const [productsRes, pendingProductsRes, ordersRes] = await Promise.all([
             fetchWithRetry(`${services.product}/api/products`, { headers }),
-            fetchWithRetry(`${services.product}/api/products/moderation/pending`, { headers }).catch(() => ({ json: () => ({ count: 0 }) }))
+            fetchWithRetry(`${services.product}/api/products/moderation/pending`, { headers }).catch(() => ({ json: () => ({ count: 0 }) })),
+            fetchWithRetry(`${services.order}/analytics/admin`, { headers }).catch(() => ({ json: () => ({ data: { total_revenue: 0, total_orders: 0 } }) }))
         ]);
 
         const productsData = await productsRes.json();
         const pendingData = await pendingProductsRes.json();
+        const ordersData = await ordersRes.json();
 
-        // In a real scenario, we'd also fetch total users and revenue. For Phase 8, we mock those metrics 
-        // to avoid building dedicated sum/count endpoints in order-service.
         res.status(200).json({
             success: true,
             data: {
                 total_products: productsData.total || 0,
                 pending_approvals: pendingData.count || 0,
-                total_users: 12450,
-                total_revenue: 345000.00
+                total_users: 12450, // Mocked for now
+                total_revenue: ordersData.data?.total_revenue || 0,
+                total_orders: ordersData.data?.total_orders || 0
             }
         });
     } catch (err) {

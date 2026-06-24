@@ -41,7 +41,7 @@ export default function CheckoutSuccessPage() {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link 
-            href="/orders" 
+            href="/customer/orders" 
             className="px-8 py-4 bg-slate-100 dark:bg-dark-900 text-slate-900 dark:text-white rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-dark-700 transition-colors flex items-center justify-center gap-2"
           >
             Track Order <ArrowRight className="w-4 h-4" />

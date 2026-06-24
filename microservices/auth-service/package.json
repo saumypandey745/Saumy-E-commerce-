@@ -21,7 +21,11 @@
     "pg-hstore": "^2.3.4",
     "qrcode": "^1.5.4",
     "sequelize": "^6.33.0",
+    "sqlite3": "^5.1.7",
     "speakeasy": "^2.0.0",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "nodemailer": "^6.9.13",
+    "twilio": "^5.0.4",
+    "google-auth-library": "^9.10.0"
   }
 }

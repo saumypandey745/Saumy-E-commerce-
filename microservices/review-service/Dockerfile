@@ -1,11 +1,21 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --only=production && mkdir -p node_modules
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY microservices/shared ./microservices/shared
+COPY microservices/review-service ./microservices/review-service
+RUN npm install
+# Since we are using npm workspaces, npm install from root works best.
 
 FROM node:18-alpine
 WORKDIR /app
+COPY package*.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
 COPY --from=builder /app/node_modules ./node_modules
-COPY . .
+COPY --from=builder /app/microservices/shared ./microservices/shared
+COPY --from=builder /app/microservices/review-service ./microservices/review-service
+WORKDIR /app/microservices/review-service
 ENV NODE_ENV=production
 CMD ["npm", "start"]

@@ -8,6 +8,7 @@ import { ShieldCheck, Lock, CreditCard, ChevronRight, Check } from 'lucide-react
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { getValidImageUrl } from '@/lib/imageFallback';
 
 export default function CheckoutPage() {
   const { cart, cartTotal, language, currency, clearCart } = useAppStore();
@@ -16,7 +17,7 @@ export default function CheckoutPage() {
   const [step, setStep] = useState(1); // 1: Shipping, 2: Payment
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  
+
   const [shippingAddress, setShippingAddress] = useState('123 Innovation Drive, San Francisco, 94103');
   const [cardNumber, setCardNumber] = useState('4111111111111111');
 
@@ -46,9 +47,22 @@ export default function CheckoutPage() {
         shipping_address: shippingAddress,
         card_number: cardNumber
       });
-      if (res.data.success) {
-        clearCart();
-        router.push('/checkout/success');
+      
+      if (res.data.success && res.data.order_id) {
+        // Now get the Stripe Checkout Session URL
+        const sessionRes = await api.post('/api/payments/checkout-session', {
+            order_id: res.data.order_id,
+            amount: total,
+            currency: currency.toLowerCase(),
+            items: cart
+        });
+
+        if (sessionRes.data.success && sessionRes.data.url) {
+            clearCart();
+            window.location.href = sessionRes.data.url; // Redirect to Stripe
+        } else {
+            setErrorMsg('Failed to initialize payment gateway.');
+        }
       } else {
         setErrorMsg(res.data.message || 'Checkout failed');
       }
@@ -64,7 +78,7 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0f172a] pt-24 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Checkout Header */}
         <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
           <Link href="/cart" className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 group">
@@ -77,10 +91,10 @@ export default function CheckoutPage() {
         </div>
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-12">
-          
+
           {/* Left: Form Flow */}
           <div className="lg:col-span-7">
-            
+
             {/* Step Indicators */}
             <div className="flex items-center gap-4 mb-8">
               <div className={`flex items-center gap-2 ${step >= 1 ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'}`}>
@@ -101,7 +115,7 @@ export default function CheckoutPage() {
             <div className="bg-white dark:bg-dark-800 rounded-3xl shadow-sm border border-slate-200 dark:border-dark-700 p-8">
               <AnimatePresence mode="wait">
                 {step === 1 && (
-                  <motion.div 
+                  <motion.div
                     key="step1"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -141,14 +155,14 @@ export default function CheckoutPage() {
                 )}
 
                 {step === 2 && (
-                  <motion.div 
+                  <motion.div
                     key="step2"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                   >
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Payment Method</h2>
-                    
+
                     <div className="space-y-4 mb-8">
                       <label className="flex items-center justify-between p-4 border-2 border-brand-500 bg-brand-50 dark:bg-brand-900/20 rounded-xl cursor-pointer">
                         <div className="flex items-center gap-3">
@@ -162,7 +176,7 @@ export default function CheckoutPage() {
                           <div className="w-8 h-5 bg-slate-200 dark:bg-dark-700 rounded text-[8px] flex items-center justify-center font-bold text-slate-500">MC</div>
                         </div>
                       </label>
-                      
+
                       <label className="flex items-center justify-between p-4 border border-slate-200 dark:border-dark-700 bg-slate-50 dark:bg-dark-900 rounded-xl cursor-not-allowed opacity-50">
                         <div className="flex items-center gap-3">
                           <div className="w-5 h-5 rounded-full border border-slate-300 dark:border-dark-600 bg-white dark:bg-dark-800"></div>
@@ -187,19 +201,19 @@ export default function CheckoutPage() {
                           <input type="password" required defaultValue="123" className="w-full bg-slate-50 dark:bg-dark-900 border border-slate-200 dark:border-dark-600 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none" />
                         </div>
                       </div>
-                      
+
                       {errorMsg && (
                         <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm font-medium">
                           {errorMsg}
                         </div>
                       )}
-                      
+
                       <div className="flex gap-4 mt-8">
                         <button type="button" onClick={() => setStep(1)} className="px-6 py-4 bg-slate-100 dark:bg-dark-900 text-slate-700 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-dark-700 transition-colors">
                           Back
                         </button>
-                        <button 
-                          type="submit" 
+                        <button
+                          type="submit"
                           disabled={isProcessing}
                           className={`flex-1 text-white rounded-xl py-4 font-bold flex items-center justify-center gap-2 transition-all ${isProcessing ? 'bg-brand-400 cursor-not-allowed' : 'bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-500/30'}`}
                         >
@@ -221,12 +235,12 @@ export default function CheckoutPage() {
           <div className="lg:col-span-5 mt-8 lg:mt-0">
             <div className="bg-slate-100 dark:bg-dark-800/50 rounded-3xl p-8 border border-slate-200 dark:border-dark-700 sticky top-24">
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Order Summary</h3>
-              
+
               <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2 hide-scrollbar">
                 {cart.map(item => (
                   <div key={item.id} className="flex gap-4">
                     <div className="w-16 h-16 rounded-xl overflow-hidden bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 flex-shrink-0 relative">
-                      <img src={item.image} alt={item.title} className="w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal" />
+                      <img src={getValidImageUrl(item.image, item.title)} alt={item.title} className="w-full h-full object-cover" />
                       <span className="absolute -top-1 -right-1 w-5 h-5 bg-brand-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center border-2 border-white dark:border-dark-800">{item.quantity}</span>
                     </div>
                     <div>

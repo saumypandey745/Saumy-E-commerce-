@@ -4,12 +4,20 @@ const { sequelize } = require('../config/db');
 const User = sequelize.define('User', {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
+  phone: { type: DataTypes.STRING, allowNull: true, unique: true },
+  full_name: { type: DataTypes.STRING, allowNull: true },
   password_hash: { type: DataTypes.STRING, allowNull: false },
   role: { type: DataTypes.ENUM('CUSTOMER', 'SELLER', 'ADMIN', 'SUPER_ADMIN'), defaultValue: 'CUSTOMER' },
   
   // Verification
   is_verified: { type: DataTypes.BOOLEAN, defaultValue: false },
   verification_token: { type: DataTypes.STRING, allowNull: true },
+  otp_code: { type: DataTypes.STRING, allowNull: true },
+  otp_expires: { type: DataTypes.DATE, allowNull: true },
+
+  // Account Locking
+  failed_login_attempts: { type: DataTypes.INTEGER, defaultValue: 0 },
+  lock_until: { type: DataTypes.DATE, allowNull: true },
   
   // Account Recovery
   reset_password_token: { type: DataTypes.STRING, allowNull: true },

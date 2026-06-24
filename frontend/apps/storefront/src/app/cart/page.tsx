@@ -5,6 +5,7 @@ import { useAppStore } from '../store';
 import { translations, Language, currencySymbols, conversionRates } from '../translations';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Tag, CheckCircle2, Info, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { getValidImageUrl } from '@/lib/imageFallback';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CartPage() {
@@ -47,24 +48,24 @@ export default function CartPage() {
   const shipping = subtotal > shippingTarget ? 0 : 15.00;
   const tax = (subtotal - calculatedDiscount) * 0.08;
   const total = (subtotal - calculatedDiscount) + shipping + tax;
-  
+
   const progressPercent = Math.min((subtotal / shippingTarget) * 100, 100);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0f172a] transition-colors pt-24 pb-20">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white">
-            {language === 'en' ? 'Your Shopping Cart' : 'Twój Koszyk'}
+            {t.shoppingCart}
           </h1>
           <Link href="/products" className="text-brand-600 dark:text-brand-400 hover:text-brand-700 font-bold flex items-center gap-1">
-            {language === 'en' ? 'Continue Shopping' : 'Kontynuuj zakupy'} <ArrowRight className="w-4 h-4" />
+            {t.explore} <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 
         {cart.length === 0 ? (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white dark:bg-dark-800 rounded-3xl shadow-sm border border-slate-200 dark:border-dark-700 p-16 text-center max-w-2xl mx-auto mt-12"
@@ -73,24 +74,23 @@ export default function CartPage() {
               <ShoppingBag className="w-10 h-10 text-slate-400" />
             </div>
             <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
-              {language === 'en' ? 'Your cart is empty' : 'Twój koszyk jest pusty'}
+              {t.emptyCart}
             </h2>
             <p className="text-slate-500 dark:text-slate-400 mb-8 text-lg">
-              {language === 'en' ? 'Looks like you haven\'t added any premium gear to your cart yet. Discover our latest collections.' : 'Wygląda na to, że nie dodałeś jeszcze żadnych produktów do koszyka.'}
             </p>
-            <Link 
+            <Link
               href="/products"
               className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-500/30 transition-all active:scale-95"
             >
-              {language === 'en' ? 'Start Exploring' : 'Rozpocznij zakupy'}
+              {t.startExploring}
             </Link>
           </motion.div>
         ) : (
           <div className="lg:grid lg:grid-cols-12 lg:gap-8">
-            
+
             {/* Left: Cart Items */}
             <div className="lg:col-span-8">
-              
+
               {/* Shipping Progress Bar */}
               <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-slate-200 dark:border-dark-700 p-6 mb-6">
                 <div className="flex items-center gap-3 mb-4">
@@ -98,13 +98,13 @@ export default function CartPage() {
                     {subtotal >= shippingTarget ? <CheckCircle2 className="w-5 h-5" /> : <Truck className="w-5 h-5" />}
                   </div>
                   <p className="font-bold text-slate-900 dark:text-white">
-                    {subtotal >= shippingTarget 
-                      ? "You've unlocked Free Global Shipping!" 
+                    {subtotal >= shippingTarget
+                      ? "You've unlocked Free Global Shipping!"
                       : `You're ${formatPrice(shippingTarget - subtotal)} away from Free Shipping!`}
                   </p>
                 </div>
                 <div className="w-full h-3 bg-slate-100 dark:bg-dark-900 rounded-full overflow-hidden">
-                  <motion.div 
+                  <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercent}%` }}
                     transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -117,22 +117,23 @@ export default function CartPage() {
                 <ul className="divide-y divide-slate-100 dark:divide-dark-700">
                   <AnimatePresence>
                     {cart.map((item) => (
-                      <motion.li 
+                      <motion.li
                         layout
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20, scale: 0.9 }}
-                        key={item.id} 
+                        key={item.id}
                         className="p-6 flex flex-col sm:flex-row items-center gap-6 group hover:bg-slate-50 dark:hover:bg-dark-900/50 transition-colors"
                       >
                         <Link href={`/products/${item.id}`} className="w-28 h-28 flex-shrink-0 bg-slate-100 dark:bg-dark-900 rounded-2xl overflow-hidden relative border border-slate-200 dark:border-dark-700 shadow-sm block">
-                          <img 
-                            src={item.image} 
-                            alt={item.title} 
-                            className="w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal group-hover:scale-110 transition-transform duration-500"
+                          <img
+                            src={getValidImageUrl(item.image, item.title)}
+                            onError={(e: any) => { e.currentTarget.src = `https://placehold.co/800x800/png?text=${encodeURIComponent(item.title || 'Product')}`; }}
+                            alt={item.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />
                         </Link>
-                        
+
                         <div className="flex-1 flex flex-col justify-between w-full">
                           <div className="flex justify-between items-start">
                             <Link href={`/products/${item.id}`}>
@@ -147,10 +148,10 @@ export default function CartPage() {
                               {formatPrice(item.price)}
                             </p>
                           </div>
-                          
+
                           <div className="mt-6 flex items-center justify-between">
                             <div className="flex items-center border border-slate-200 dark:border-dark-600 rounded-xl bg-white dark:bg-dark-800 shadow-sm">
-                              <button 
+                              <button
                                 onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
                                 className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-dark-700 rounded-l-xl transition-colors"
                               >
@@ -159,20 +160,20 @@ export default function CartPage() {
                               <span className="w-10 text-center font-bold text-slate-900 dark:text-white border-x border-slate-200 dark:border-dark-600 flex items-center justify-center h-10">
                                 {item.quantity}
                               </span>
-                              <button 
+                              <button
                                 onClick={() => updateQuantity(item.id, item.quantity + 1)}
                                 className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-dark-700 rounded-r-xl transition-colors"
                               >
                                 <Plus className="w-4 h-4" />
                               </button>
                             </div>
-                            
-                            <button 
+
+                            <button
                               onClick={() => removeFromCart(item.id)}
                               className="text-slate-400 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2 text-sm font-bold"
                             >
                               <Trash2 className="w-4 h-4" />
-                              <span className="hidden sm:inline">Remove</span>
+                              <span className="hidden sm:inline">{t.remove}</span>
                             </button>
                           </div>
                         </div>
@@ -187,15 +188,15 @@ export default function CartPage() {
             <div className="lg:col-span-4 mt-8 lg:mt-0">
               <div className="bg-white dark:bg-dark-800 shadow-xl rounded-3xl border border-slate-200 dark:border-dark-700 p-8 sticky top-24">
                 <h2 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-                  {language === 'en' ? 'Order Summary' : 'Podsumowanie'}
+                  {t.shoppingCart}
                 </h2>
-                
+
                 <dl className="space-y-4 text-sm text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-dark-700 pb-6 mb-6">
                   <div className="flex items-center justify-between">
-                    <dt className="font-medium">{language === 'en' ? 'Subtotal' : 'Suma częściowa'}</dt>
+                    <dt className="font-medium">{t.subtotal}</dt>
                     <dd className="font-bold text-slate-900 dark:text-white">{formatPrice(subtotal)}</dd>
                   </div>
-                  
+
                   {discount > 0 && (
                     <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
                       <dt className="font-medium">Discount applied</dt>
@@ -217,9 +218,9 @@ export default function CartPage() {
                       {shipping === 0 ? <span className="text-emerald-500 uppercase tracking-wider text-xs">Free</span> : formatPrice(shipping)}
                     </dd>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
-                    <dt className="font-medium">{language === 'en' ? 'Estimated Tax' : 'Szacowany podatek'}</dt>
+                    <dt className="font-medium">{t.tax}</dt>
                     <dd className="font-bold text-slate-900 dark:text-white">{formatPrice(tax)}</dd>
                   </div>
                 </dl>
@@ -230,14 +231,14 @@ export default function CartPage() {
                     <Tag className="w-4 h-4" /> Promo Code
                   </label>
                   <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="e.g. WELCOME10" 
+                    <input
+                      type="text"
+                      placeholder="e.g. WELCOME10"
                       value={promoCode}
                       onChange={(e) => setPromoCode(e.target.value)}
                       className={`flex-1 bg-slate-50 dark:bg-dark-900 border ${promoStatus === 'error' ? 'border-red-300 dark:border-red-500/50 focus:ring-red-500' : promoStatus === 'success' ? 'border-emerald-300 dark:border-emerald-500/50 focus:ring-emerald-500' : 'border-slate-200 dark:border-dark-600 focus:ring-brand-500'} rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:ring-2 outline-none transition-all uppercase`}
                     />
-                    <button 
+                    <button
                       onClick={handleApplyPromo}
                       className="px-4 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors"
                     >
@@ -249,7 +250,7 @@ export default function CartPage() {
                 </div>
 
                 <div className="flex items-center justify-between mb-8">
-                  <dt className="text-lg font-bold text-slate-900 dark:text-white">Total</dt>
+                  <dt className="text-lg font-bold text-slate-900 dark:text-white">{t.total}</dt>
                   <dd className="text-3xl font-black text-brand-600 dark:text-brand-400">
                     {formatPrice(total)}
                   </dd>
@@ -259,7 +260,7 @@ export default function CartPage() {
                   href="/checkout"
                   className="w-full bg-brand-600 border border-transparent rounded-xl shadow-lg py-4 px-4 text-base font-bold text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-all shadow-brand-500/30 flex items-center justify-center gap-2 active:scale-95"
                 >
-                  {language === 'en' ? 'Secure Checkout' : 'Przejdź do kasy'}
+                  {t.checkout}
                   <ArrowRight className="w-5 h-5" />
                 </Link>
 
