@@ -7,7 +7,7 @@
     "dev": "nodemon src/index.js"
   },
   "dependencies": {
-    "@ecommerce/shared": "1.0.0",
+    "@ecommerce/shared": "workspace:*",
     "@faker-js/faker": "^9.9.0",
     "amqplib": "^0.10.9",
     "cors": "^2.8.5",

@@ -15,7 +15,7 @@
     "pg-hstore": "^2.3.4",
     "sqlite3": "^5.1.7",
     "amqplib": "^0.10.3",
-    "@ecommerce/shared": "1.0.0"
+    "@ecommerce/shared": "workspace:*"
   },
   "devDependencies": {}
 }

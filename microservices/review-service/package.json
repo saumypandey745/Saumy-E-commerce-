@@ -12,7 +12,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@ecommerce/shared": "file:../shared",
+    "@ecommerce/shared": "workspace:*",
     "amqplib": "^0.10.9",
     "axios": "^1.18.0",
     "cors": "^2.8.6",

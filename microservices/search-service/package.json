@@ -20,6 +20,6 @@
     "@elastic/elasticsearch": "^8.10.0",
     "apache-arrow": "^15.0.2",
     "mongoose": "^8.5.0",
-    "@ecommerce/shared": "1.0.0"
+    "@ecommerce/shared": "workspace:*"
   }
 }
