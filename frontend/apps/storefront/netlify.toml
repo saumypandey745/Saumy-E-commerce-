@@ -1,0 +1,13 @@
+[build]
+  # Netlify me site ka Base directory = frontend/apps/storefront set karo
+  # Yeh command repo root se run hogi
+  command = "cd ../../.. && pnpm install --no-frozen-lockfile && pnpm --filter storefront build"
+  publish = ".next"
+
+[build.environment]
+  NEXT_PUBLIC_API_URL = "https://your-api-gateway.com"
+  NODE_VERSION = "18"
+  PNPM_VERSION = "8"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
