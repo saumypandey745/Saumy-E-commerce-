@@ -1,0 +1,63 @@
+services:
+  # -------------------------
+  # API Gateway
+  # -------------------------
+  - type: web
+    name: ecommerce-api-gateway
+    env: node
+    buildCommand: pnpm install && pnpm build
+    startCommand: node api-gateway/src/index.js
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: NODE_ENV
+        value: production
+      # Internal service URLs to be updated post-deployment based on generated Render URLs
+      - key: AUTH_SERVICE_URL
+        value: https://ecommerce-auth-service.onrender.com
+      - key: PRODUCT_SERVICE_URL
+        value: https://ecommerce-product-service.onrender.com
+      - key: CART_SERVICE_URL
+        value: https://ecommerce-cart-service.onrender.com
+      - key: ORDER_SERVICE_URL
+        value: https://ecommerce-order-service.onrender.com
+      - key: PAYMENT_SERVICE_URL
+        value: https://ecommerce-payment-service.onrender.com
+      - key: REVIEW_SERVICE_URL
+        value: https://ecommerce-review-service.onrender.com
+
+  # -------------------------
+  # Auth Service
+  # -------------------------
+  - type: web
+    name: ecommerce-auth-service
+    env: node
+    buildCommand: pnpm install --filter auth-service
+    startCommand: node microservices/auth-service/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_URI
+        sync: false # Requires Neon Postgres URL
+      - key: JWT_SECRET
+        sync: false # Securely generated
+
+  # -------------------------
+  # Product Service
+  # -------------------------
+  - type: web
+    name: ecommerce-product-service
+    env: node
+    buildCommand: pnpm install --filter product-service
+    startCommand: node microservices/product-service/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: MONGO_URI
+        sync: false # Requires MongoDB Atlas URL
+      - key: REDIS_URL
+        sync: false # Requires Upstash URL
+
+  # NOTE: To strictly adhere to the Render Free Tier limits (which typically restricts accounts to 1 or very few active Web Services), 
+  # it is highly recommended to merge the compute footprint into a single Monolith entrypoint for the Free Tier, 
+  # OR deploy supplementary services onto Railway.app using the provided `npx railway up` equivalents.
