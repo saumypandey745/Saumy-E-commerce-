@@ -48,9 +48,9 @@ const connectDB = async () => {
         console.log(`[Order Service] ${dbDialect.toUpperCase()} connected successfully.`);
 
         // CRIT-04: Never auto-sync schema in production — run Sequelize migrations
-        if (dbDialect !== 'postgres' || process.env.NODE_ENV !== 'production') {
+        if (dbDialect !== 'postgres' || process.env.NODE_ENV !== 'production' || process.env.DB_SYNC === 'true') {
             await sequelize.sync({ alter: true });
-            console.log('[Order Service] Schema synced (dev mode).');
+            console.log('[Order Service] Schema synced.');
         } else {
             console.log('[Order Service] Production mode — skipping auto-sync. Run migrations manually.');
         }

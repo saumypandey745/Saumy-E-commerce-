@@ -1,0 +1,277 @@
+# ============================================================================
+# Render Blueprint — E-Commerce Enterprise Platform
+# Deploy via: https://render.com/deploy → link GitHub repo → select this file
+# ============================================================================
+services:
+  # -------------------------
+  # API Gateway (must deploy last — depends on all service URLs)
+  # -------------------------
+  - type: web
+    name: ecommerce-api-gateway
+    runtime: node
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile=false && cd api-gateway && pnpm install
+    startCommand: cd api-gateway && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: AUTH_SERVICE_URL
+        sync: false
+      - key: PRODUCT_SERVICE_URL
+        sync: false
+      - key: ORDER_SERVICE_URL
+        sync: false
+      - key: PAYMENT_SERVICE_URL
+        sync: false
+      - key: CART_SERVICE_URL
+        sync: false
+      - key: SEARCH_SERVICE_URL
+        sync: false
+      - key: REVIEW_SERVICE_URL
+        sync: false
+      - key: AI_SERVICE_URL
+        sync: false
+      - key: AIML_SERVICE_URL
+        sync: false
+      - key: MONITORING_SERVICE_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+
+  # -------------------------
+  # Auth Service
+  # -------------------------
+  - type: web
+    name: ecommerce-auth-service
+    runtime: node
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile=false
+    startCommand: cd microservices/auth-service && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8001
+      - key: NODE_ENV
+        value: production
+      - key: DB_DIALECT
+        value: postgres
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: DB_SYNC
+        value: "true"
+      - key: JWT_SECRET
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+
+  # -------------------------
+  # Product Service
+  # -------------------------
+  - type: web
+    name: ecommerce-product-service
+    runtime: node
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile=false
+    startCommand: cd microservices/product-service && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8003
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: RABBITMQ_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # -------------------------
+  # Order Service
+  # -------------------------
+  - type: web
+    name: ecommerce-order-service
+    runtime: node
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile=false
+    startCommand: cd microservices/order-service && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8004
+      - key: NODE_ENV
+        value: production
+      - key: DB_DIALECT
+        value: postgres
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: DB_SYNC
+        value: "true"
+      - key: REDIS_URL
+        sync: false
+      - key: RABBITMQ_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: PRODUCT_SERVICE_URL
+        sync: false
+
+  # -------------------------
+  # Payment Service
+  # -------------------------
+  - type: web
+    name: ecommerce-payment-service
+    runtime: node
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile=false
+    startCommand: cd microservices/payment-service && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8006
+      - key: NODE_ENV
+        value: production
+      - key: DB_DIALECT
+        value: postgres
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: DB_SYNC
+        value: "true"
+      - key: RABBITMQ_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # -------------------------
+  # Cart Service
+  # -------------------------
+  - type: web
+    name: ecommerce-cart-service
+    runtime: node
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile=false
+    startCommand: cd microservices/cart-service && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8007
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # -------------------------
+  # Review Service
+  # -------------------------
+  - type: web
+    name: ecommerce-review-service
+    runtime: node
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile=false
+    startCommand: cd microservices/review-service && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8009
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: RABBITMQ_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ORDER_SERVICE_URL
+        sync: false
+
+  # -------------------------
+  # Search Service
+  # -------------------------
+  - type: web
+    name: ecommerce-search-service
+    runtime: node
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile=false
+    startCommand: cd microservices/search-service && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8008
+      - key: NODE_ENV
+        value: production
+      - key: RABBITMQ_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: USE_RABBITMQ_MOCK
+        value: "true"
+
+  # -------------------------
+  # AI Service (Node.js mock)
+  # -------------------------
+  - type: web
+    name: ecommerce-ai-service
+    runtime: node
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile=false
+    startCommand: cd microservices/ai-service && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8005
+      - key: NODE_ENV
+        value: production
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # -------------------------
+  # AI-ML Service (Python/FastAPI)
+  # -------------------------
+  - type: web
+    name: ecommerce-ai-ml-service
+    runtime: python
+    buildCommand: cd microservices/ai-ml-service && pip install -r requirements.txt
+    startCommand: cd microservices/ai-ml-service && uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8010
+
+  # -------------------------
+  # Monitoring Service
+  # -------------------------
+  - type: web
+    name: ecommerce-monitoring-service
+    runtime: node
+    buildCommand: npm install -g pnpm && cd microservices/monitoring-service && pnpm install
+    startCommand: cd microservices/monitoring-service && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8011
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false

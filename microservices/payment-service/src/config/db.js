@@ -51,9 +51,9 @@ const connectDB = async () => {
 
         // CRIT-04: Use sync({ alter: true }) in dev only.
         // In production, always run proper Sequelize migrations.
-        if (dbDialect !== 'postgres' || process.env.NODE_ENV !== 'production') {
+        if (dbDialect !== 'postgres' || process.env.NODE_ENV !== 'production' || process.env.DB_SYNC === 'true') {
             await sequelize.sync({ alter: true });
-            console.log('[Payment Service] Database schema synced (dev mode).');
+            console.log('[Payment Service] Database schema synced.');
         } else {
             console.log('[Payment Service] Production mode — skipping auto-sync. Run migrations manually.');
         }
