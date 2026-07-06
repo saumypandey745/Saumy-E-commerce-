@@ -5,7 +5,16 @@ const connectDB = async (retries = 10, delay = 3000) => {
     for (let i = 1; i <= retries; i++) {
         try {
             const mongoUri = process.env.MONGO_URI || 'mongodb://admin:adminpassword@localhost:27017/product_db?authSource=admin';
-            await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
+            await mongoose.connect(mongoUri, {
+        maxPoolSize: 50,
+        minPoolSize: 10,
+        maxIdleTimeMS: 10000,
+        socketTimeoutMS: 45000,
+        serverSelectionTimeoutMS: 5000,
+        heartbeatFrequencyMS: 10000,
+        retryWrites: true,
+        retryReads: true
+});
             console.log('MongoDB connected successfully.');
             return;
         } catch (error) {

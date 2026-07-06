@@ -32,9 +32,15 @@ const start = async () => {
     try {
         // Connect to MongoDB
         await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/ecommerce', {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        });
+        maxPoolSize: 50,
+        minPoolSize: 10,
+        maxIdleTimeMS: 10000,
+        socketTimeoutMS: 45000,
+        serverSelectionTimeoutMS: 5000,
+        heartbeatFrequencyMS: 10000,
+        retryWrites: true,
+        retryReads: true
+});
         console.log('MongoDB connected for Monitoring');
 
         // Connect Redis Pub/Sub for cross-service events

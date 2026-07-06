@@ -57,7 +57,16 @@ app.use(express.json());
 // MongoDB connection for product retrieval
 const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/product_db';
 mongoose.connect(mongoUri)
-    .then(() => console.log('AI Service connected to MongoDB.'))
+    .then(() => console.log('AI Service connected to MongoDB.'), {
+        maxPoolSize: 50,
+        minPoolSize: 10,
+        maxIdleTimeMS: 10000,
+        socketTimeoutMS: 45000,
+        serverSelectionTimeoutMS: 5000,
+        heartbeatFrequencyMS: 10000,
+        retryWrites: true,
+        retryReads: true
+})
     .catch(err => console.error('AI Service MongoDB connection error:', err));
 
 // Product Schema definition to fetch catalog
