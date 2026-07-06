@@ -1,7 +1,7 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --only=production && mkdir -p node_modules
+RUN npm install -g pnpm && pnpm install --only=production && mkdir -p node_modules
 
 FROM node:18-alpine
 WORKDIR /app

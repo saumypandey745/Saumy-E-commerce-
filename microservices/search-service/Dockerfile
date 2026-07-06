@@ -5,7 +5,7 @@ COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
 COPY microservices/shared ./microservices/shared
 COPY microservices/search-service ./microservices/search-service
-RUN npm install
+RUN npm install -g pnpm && pnpm install
 # Since we are using npm workspaces, npm install from root works best.
 
 FROM node:18-alpine
