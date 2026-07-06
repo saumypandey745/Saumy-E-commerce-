@@ -103,7 +103,7 @@ export default function ProductsPage() {
       if (priceRange[1] < 3000) params.append('max_price', priceRange[1].toString());
       if (minRating > 0) params.append('min_rating', minRating.toString());
 
-      const res = await api.get(`/api/products?${params.toString()}`);
+      const res = await api.get(`/api/v1/products?${params.toString()}`);
       if (res.data.success) {
          const mapped = res.data.products.map((p: any) => ({
            id: p._id,

@@ -18,6 +18,16 @@ exports.createProduct = async (req, res) => {
         if (!req.user || !req.user.id) return res.status(401).json({ success: false, message: 'Unauthorized' });
         const { title, description, base_price, category_id, ...otherFields } = req.body;
 
+        const Category = require('../models/Category');
+        if (category_id) {
+            const category = await Category.findById(category_id);
+            if (!category) {
+                return res.status(400).json({ success: false, message: 'Invalid category_id: Category does not exist.' });
+            }
+        } else {
+            return res.status(400).json({ success: false, message: 'category_id is required.' });
+        }
+
         const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
         const final_price = base_price - (base_price * (otherFields.discount_percentage || 0) / 100);
 
@@ -47,6 +57,14 @@ exports.updateProduct = async (req, res) => {
         const product = await Product.findById(productId);
         if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
         if (product.seller_id.toString() !== req.user.id) return res.status(403).json({ success: false, message: 'Forbidden' });
+
+        if (req.body.category_id) {
+            const Category = require('../models/Category');
+            const category = await Category.findById(req.body.category_id);
+            if (!category) {
+                return res.status(400).json({ success: false, message: 'Invalid category_id: Category does not exist.' });
+            }
+        }
 
         Object.assign(product, req.body);
         if (req.body.base_price !== undefined || req.body.discount_percentage !== undefined) {

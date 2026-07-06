@@ -4,9 +4,15 @@ const { User, AuditLog } = require('../models');
 const tokenService = require('./token.service');
 const emailService = require('./email.service');
 const smsService = require('./sms.service');
-const { OAuth2Client } = require('google-auth-library');
-
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID');
+let OAuth2Client;
+let googleClient = null;
+try {
+    const googleAuth = require('google-auth-library');
+    OAuth2Client = googleAuth.OAuth2Client;
+    googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID');
+} catch (e) {
+    console.warn('[AuthService] google-auth-library not installed locally. Google login disabled.');
+}
 
 const { Op } = require('sequelize');
 
@@ -95,6 +101,14 @@ class AuthService {
             await user.save();
             await this.logAudit(user.id, 'LOGIN_FAILED_BAD_PASSWORD', req);
             throw new Error('Invalid credentials');
+        }
+
+        // HIGH-07: Enforce email verification before issuing tokens
+        // A user who registered with an email they don't own cannot access the platform
+        if (!user.is_verified) {
+            console.warn(`[AuthService] Login blocked: User '${user.email}' has not verified their email.`);
+            await this.logAudit(user.id, 'LOGIN_FAILED_UNVERIFIED', req);
+            throw new Error('Email not verified. Please check your inbox for the verification link or OTP.');
         }
 
         // Reset failed login attempts on success

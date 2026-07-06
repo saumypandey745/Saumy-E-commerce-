@@ -33,7 +33,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchStore = async () => {
       try {
-        const res = await api.get('/api/sellers/store');
+        const res = await api.get('/api/v1/sellers/store');
         if (res.data.success && res.data.store) {
           setStoreProfile(res.data.store);
           setFormData({
@@ -63,7 +63,7 @@ export default function SettingsPage() {
     setMessage('');
 
     try {
-      const res = await api.put('/api/sellers/store', formData);
+      const res = await api.put('/api/v1/sellers/store', formData);
       if (res.data.success) {
         setStoreProfile(res.data.store);
         setMessage('Store profile updated successfully!');

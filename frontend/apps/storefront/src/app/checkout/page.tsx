@@ -43,14 +43,14 @@ export default function CheckoutPage() {
     setIsProcessing(true);
     setErrorMsg('');
     try {
-      const res = await api.post('/api/orders/checkout', {
+      const res = await api.post('/api/v1/orders/checkout', {
         shipping_address: shippingAddress,
         card_number: cardNumber
       });
       
       if (res.data.success && res.data.order_id) {
         // Now get the Stripe Checkout Session URL
-        const sessionRes = await api.post('/api/payments/checkout-session', {
+        const sessionRes = await api.post('/api/v1/payments/checkout-session', {
             order_id: res.data.order_id,
             amount: total,
             currency: currency.toLowerCase(),

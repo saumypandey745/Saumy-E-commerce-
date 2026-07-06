@@ -1,4 +1,9 @@
-const twilio = require('twilio');
+let twilio;
+try {
+    twilio = require('twilio');
+} catch (e) {
+    console.warn('[SmsService] twilio not installed locally. Real SMS disabled.');
+}
 
 class SmsService {
     constructor() {

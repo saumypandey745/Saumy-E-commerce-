@@ -1,0 +1,45 @@
+name: Contract Testing Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  consumer-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+      - run: npm install
+      - name: Run Consumer Contract Tests
+        run: npm run test:contracts:consumer
+      - name: Publish Pact to Broker
+        run: npm run pact:publish
+        env:
+          PACT_BROKER_URL: ${{ env.PACT_BROKER_URL || 'http://localhost:9292' }}
+          PACT_BROKER_TOKEN: ${{ env.PACT_BROKER_TOKEN || 'dummy' }}
+
+  provider-verification:
+    needs: consumer-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+      - run: npm install
+      - name: Start Provider Service
+        run: docker-compose -f docker-compose.yml up -d product-service auth-service
+      - name: Wait for services
+        run: sleep 15
+      - name: Verify Contracts
+        run: npm run test:contracts:provider
+        env:
+          PACT_BROKER_URL: ${{ env.PACT_BROKER_URL || 'http://localhost:9292' }}
+          PACT_BROKER_TOKEN: ${{ env.PACT_BROKER_TOKEN || 'dummy' }}

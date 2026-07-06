@@ -4,7 +4,6 @@ const path = require('path');
 const Stripe = require('stripe');
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY || 'sk_test_mock424242424242424242424242';
 const stripe = new Stripe(stripeSecretKey);
-const path = require('path');
 
 exports.downloadInvoice = async (req, res, next) => {
     try {

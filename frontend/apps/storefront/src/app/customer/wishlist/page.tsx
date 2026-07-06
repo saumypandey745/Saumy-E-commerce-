@@ -15,7 +15,7 @@ export default function WishlistPage() {
   useEffect(() => {
     // In a real app, fetch only the wishlist items by ID. 
     // Here we fetch all and filter.
-    api.get('/api/products')
+    api.get('/api/v1/products')
       .then((res) => {
         if (res.data.products) {
           setProducts(res.data.products.filter((p: any) => wishlist.includes(p.id)));

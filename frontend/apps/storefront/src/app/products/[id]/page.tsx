@@ -42,7 +42,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     setMounted(true);
     const fetchProduct = async () => {
       try {
-        const res = await api.get(`/api/products/${params.id}`);
+        const res = await api.get(`/api/v1/products/${params.id}`);
         if (res.data.success && res.data.product) {
           const p = res.data.product;
           let allImages = p.images && p.images.length > 0 ? [...p.images] : [
@@ -91,7 +91,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         // Fetch AI personalized recommendations
         try {
           // The gateway maps /api/ml/recommendations to the ML service
-          const mlRes = await api.post('/api/ml/recommendations', {
+          const mlRes = await api.post('/api/v1/ml/recommendations', {
             user_id: 'guest',
             k_recommendations: 4
           });
@@ -107,7 +107,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         }
 
         // Fetch actual products for the grid (using standard fetch as mock IDs don't exist in our DB)
-        const relRes = await api.get('/api/products');
+        const relRes = await api.get('/api/v1/products');
         if (relRes.data.success) {
           // We map them but pretend they are the AI recommended ones for the UI demo
           const mapped = relRes.data.products.map((p: any) => ({
@@ -126,7 +126,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
         // Fetch reviews
         try {
-          const revRes = await api.get(`/api/reviews/${params.id}`);
+          const revRes = await api.get(`/api/v1/reviews/${params.id}`);
           if (revRes.data.success) {
             setReviews(revRes.data.reviews);
           }
@@ -197,7 +197,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     e.preventDefault();
     setIsSubmittingReview(true);
     try {
-      const res = await api.post('/api/reviews', {
+      const res = await api.post('/api/v1/reviews', {
         product_id: product.id,
         rating: reviewRating,
         comment: reviewComment
@@ -208,7 +208,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         setReviewComment('');
         setReviewRating(5);
         // Refresh product to get updated average rating
-        const pRes = await api.get(`/api/products/${product.id}`);
+        const pRes = await api.get(`/api/v1/products/${product.id}`);
         if (pRes.data.success) {
           setProduct((prev: any) => ({
             ...prev,

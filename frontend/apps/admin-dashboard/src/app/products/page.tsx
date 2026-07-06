@@ -8,7 +8,7 @@ export default function ModerationQueue() {
 
   const fetchPending = async () => {
     try {
-      const res = await api.get('/api/products/moderation/pending');
+      const res = await api.get('/api/v1/products/moderation/pending');
       setProducts(res.data.products || []);
     } catch (e) {
       console.error(e);
@@ -19,7 +19,7 @@ export default function ModerationQueue() {
 
   const handleAction = async (id: string, action: 'approve' | 'reject') => {
     try {
-      await api.post(`/api/products/moderation/${id}/${action}`, action === 'reject' ? { notes: 'Does not meet community guidelines' } : {});
+      await api.post(`/api/v1/products/moderation/${id}/${action}`, action === 'reject' ? { notes: 'Does not meet community guidelines' } : {});
       fetchPending();
     } catch (e) {
       console.error(e);

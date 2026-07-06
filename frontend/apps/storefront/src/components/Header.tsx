@@ -64,7 +64,7 @@ export default function Header() {
         return;
       }
       try {
-        const res = await api.get(`/api/search?q=${encodeURIComponent(searchQuery)}&limit=5`);
+        const res = await api.get(`/api/v1/search?q=${encodeURIComponent(searchQuery)}&limit=5`);
         if (res.data.success) {
           const payload = res.data.data || res.data;
           setSearchSuggestions(payload.products || []);

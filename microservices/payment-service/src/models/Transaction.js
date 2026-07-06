@@ -16,8 +16,11 @@ const Transaction = sequelize.define('Transaction', {
         type: DataTypes.STRING,
         allowNull: true,
     },
+    // CRIT-04: DECIMAL(12,2) — exact fixed-point arithmetic for financial data
+    // FLOAT was causing IEEE 754 rounding errors (0.1 + 0.2 ≠ 0.3) — PCI DSS violation
+    // Supports up to $9,999,999,999.99
     amount: {
-        type: DataTypes.FLOAT,
+        type: DataTypes.DECIMAL(12, 2),
         allowNull: false,
     },
     currency: {

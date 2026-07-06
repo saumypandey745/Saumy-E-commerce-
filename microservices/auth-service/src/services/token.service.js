@@ -2,12 +2,19 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { RefreshToken } = require('../models');
 
+// CRIT-01: Fail fast — signing tokens with a fallback/guessable secret is a CVSS 10.0 vulnerability
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    console.error('[FATAL] JWT_SECRET is not set. Token service cannot start safely.');
+    process.exit(1);
+}
+
 class TokenService {
     generateAccessToken(user) {
         return jwt.sign(
             { id: user.id, role: user.role, email: user.email },
-            process.env.JWT_SECRET || 'fallback_secret',
-            { expiresIn: '15m' } // Short-lived
+            JWT_SECRET,
+            { expiresIn: '15m' } // Short-lived access token
         );
     }
 

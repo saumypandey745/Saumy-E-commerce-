@@ -20,7 +20,7 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/api/orders');
+      const res = await api.get('/api/v1/orders');
       if (res.data.success) {
         setOrders(res.data.orders || []);
       }

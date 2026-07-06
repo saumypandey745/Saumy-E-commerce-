@@ -29,7 +29,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/api/auth/register', { 
+      const response = await api.post('/api/v1/auth/register', { 
         full_name: name, 
         email, 
         phone, 
@@ -55,7 +55,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/api/auth/verify-otp', { 
+      const response = await api.post('/api/v1/auth/verify-otp', { 
         emailOrPhone: email, 
         otp 
       });
@@ -75,7 +75,7 @@ export default function RegisterPage() {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setIsLoading(true);
     try {
-      const response = await api.post('/api/auth/google', {
+      const response = await api.post('/api/v1/auth/google', {
         credential: credentialResponse.credential,
         role: role // Pass the selected role
       });

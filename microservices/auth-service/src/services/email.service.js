@@ -1,4 +1,9 @@
-const nodemailer = require('nodemailer');
+let nodemailer;
+try {
+    nodemailer = require('nodemailer');
+} catch (e) {
+    console.warn('[EmailService] nodemailer not installed locally. Real emails will be disabled.');
+}
 
 class EmailService {
     constructor() {

@@ -18,11 +18,11 @@ app.get('/health', (req, res) => {
 });
 
 // Server-Sent Events Endpoint for the Super Admin Dashboard
-app.get('/api/monitoring/stream', sseController.streamMetrics);
-app.use('/api/monitoring/incidents', require('./routes/incident.routes'));
-app.get('/api/monitoring/reports/system', require('./controllers/reportController').exportSystemReport);
+app.get('/api/v1/monitoring/stream', sseController.streamMetrics);
+app.use('/api/v1/monitoring/incidents', require('./routes/incident.routes'));
+app.get('/api/v1/monitoring/reports/system', require('./controllers/reportController').exportSystemReport);
 
-app.get('/api/monitoring/containers/:name/logs', async (req, res) => {
+app.get('/api/v1/monitoring/containers/:name/logs', async (req, res) => {
     const logs = await dockerService.getContainerLogs(req.params.name);
     res.type('text/plain').send(logs);
 });

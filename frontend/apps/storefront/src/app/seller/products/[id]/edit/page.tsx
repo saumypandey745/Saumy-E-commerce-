@@ -43,7 +43,7 @@ export default function EditProductPage() {
       if (!productId) return;
       try {
         setFetching(true);
-        const res = await api.get(`/api/products/${productId}`);
+        const res = await api.get(`/api/v1/products/${productId}`);
         if (res.data.success) {
           const p = res.data.product;
           setFormData({
@@ -98,7 +98,7 @@ export default function EditProductPage() {
         payload.category_id = '60d21b4667d0d8992e610c85';
       }
 
-      const res = await api.put(`/api/sellers/products/${productId}`, payload);
+      const res = await api.put(`/api/v1/sellers/products/${productId}`, payload);
       
       if (res.data.success) {
         // 2. Upload new images if any
@@ -106,7 +106,7 @@ export default function EditProductPage() {
           for (const file of selectedFiles) {
             const formDataUpload = new FormData();
             formDataUpload.append('image', file);
-            await api.post(`/api/sellers/products/${productId}/upload-image`, formDataUpload);
+            await api.post(`/api/v1/sellers/products/${productId}/upload-image`, formDataUpload);
           }
         }
         

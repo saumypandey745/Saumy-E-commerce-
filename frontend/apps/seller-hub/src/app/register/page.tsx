@@ -24,10 +24,10 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      const res = await api.post('/api/auth/register', { name, email, password });
+      const res = await api.post('/api/v1/auth/register', { name, email, password });
       if (res.data.success) {
         // Log them in immediately
-        const loginRes = await api.post('/api/auth/login', { email, password });
+        const loginRes = await api.post('/api/v1/auth/login', { email, password });
         if (loginRes.data.success) {
           login(loginRes.data.user, loginRes.data.token);
           router.push('/onboarding');

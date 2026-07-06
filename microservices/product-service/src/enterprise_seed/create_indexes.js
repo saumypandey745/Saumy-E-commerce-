@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const Product = require('../../microservices/product-service/src/models/Product');
-const Category = require('../../microservices/product-service/src/models/Category');
+const Product = require('../models/Product');
+const Category = require('../models/Category');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ecommerce_products';
 

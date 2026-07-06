@@ -24,7 +24,7 @@ export default function OrdersPage() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await api.get('/api/orders/seller');
+        const res = await api.get('/api/v1/orders/seller');
         if (res.data.success && res.data.items) {
           // Flatten or format the items as needed
           setOrders(res.data.items);
@@ -41,7 +41,7 @@ export default function OrdersPage() {
 
   const handleUpdateStatus = async (itemId: string, newStatus: string) => {
     try {
-      const res = await api.put(`/api/orders/seller/${itemId}/status`, { status: newStatus });
+      const res = await api.put(`/api/v1/orders/seller/${itemId}/status`, { status: newStatus });
       if (res.data.success) {
         setOrders(orders.map(o => o.id === itemId ? { ...o, fulfillment_status: newStatus } : o));
       }

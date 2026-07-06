@@ -120,7 +120,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   cart: loadCart(),
   fetchCart: async () => {
     try {
-      const res = await api.get('/api/cart');
+      const res = await api.get('/api/v1/cart');
       if (res.data.success && res.data.data) {
         const cartItems = res.data.data.items.map((item: any) => ({
           id: item.productId,
@@ -155,7 +155,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
 
     try {
-      await api.post('/api/cart/items', { productId: item.id, quantity: 1 });
+      await api.post('/api/v1/cart/items', { productId: item.id, quantity: 1 });
     } catch (e) {
       console.error('Failed to sync addToCart', e);
     }
@@ -168,7 +168,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
 
     try {
-      await api.delete(`/api/cart/items/${id}`);
+      await api.delete(`/api/v1/cart/items/${id}`);
     } catch (e) {
       console.error('Failed to sync removeFromCart', e);
     }
@@ -183,9 +183,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
 
     if (quantity <= 0) {
-      try { await api.delete(`/api/cart/items/${id}`); } catch(e){}
+      try { await api.delete(`/api/v1/cart/items/${id}`); } catch(e){}
     } else {
-      try { await api.put(`/api/cart/items/${id}`, { quantity }); } catch(e){}
+      try { await api.put(`/api/v1/cart/items/${id}`, { quantity }); } catch(e){}
     }
   },
   clearCart: async () => {
@@ -206,7 +206,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const guestId = localStorage.getItem('ecomm_guest_id');
       if (guestId) {
-        await api.post('/api/cart/merge', { guestId });
+        await api.post('/api/v1/cart/merge', { guestId });
       }
       get().fetchCart();
       
@@ -220,7 +220,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           if (!get().wishlist.includes(id)) {
             // It's not in the new state fetched from backend, so add it
             try {
-              await api.post('/api/wishlist/items', { productId: id });
+              await api.post('/api/v1/wishlist/items', { productId: id });
             } catch(e){}
           }
         }
@@ -233,7 +233,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   logout: async () => {
     try {
-      await api.post('/api/auth/logout');
+      await api.post('/api/v1/auth/logout');
     } catch (e) {
       console.error('Logout API failed', e);
     }
@@ -260,7 +260,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   wishlist: loadWishlist(),
   fetchWishlist: async () => {
     try {
-      const res = await api.get('/api/wishlist');
+      const res = await api.get('/api/v1/wishlist');
       if (res.data.success && res.data.data) {
         // Map over items to extract product_id
         const itemIds = res.data.data.items.map((item: any) => item.product_id);
@@ -285,13 +285,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Sync with backend if logged in
     if (state.isLoggedIn) {
       if (isAdding) {
-        api.post('/api/wishlist/items', { productId: id }).catch(e => {
+        api.post('/api/v1/wishlist/items', { productId: id }).catch(e => {
           console.error('Failed to add to wishlist', e);
           // Revert on failure (optional but good practice)
           // set({ wishlist: state.wishlist });
         });
       } else {
-        api.delete(`/api/wishlist/items/${id}`).catch(e => {
+        api.delete(`/api/v1/wishlist/items/${id}`).catch(e => {
           console.error('Failed to remove from wishlist', e);
         });
       }

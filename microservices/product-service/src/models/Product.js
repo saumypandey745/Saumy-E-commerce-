@@ -75,9 +75,18 @@ const productSchema = new mongoose.Schema({
     review_count: { type: Number, default: 0 }
 }, { timestamps: true });
 
-// Create text index for search
-productSchema.index({ title: 'text', description: 'text' });
-productSchema.index({ slug: 1 });
-productSchema.index({ seller_id: 1 });
+// Existing indexes
+productSchema.index({ title: 'text', description: 'text', tags: 'text', search_keywords: 'text' });
+productSchema.index({ slug: 1 }, { unique: true });
+
+// MED-01: Composite indexes for high-frequency query patterns
+// Without these, every seller dashboard query / category page is a full collection scan
+productSchema.index({ seller_id: 1, status: 1 });        // Seller dashboard: products by seller+status
+productSchema.index({ category_id: 1, status: 1 });      // Category pages: products by category+status
+productSchema.index({ subcategory_id: 1, status: 1 });   // Subcategory pages
+productSchema.index({ final_price: 1, status: 1 });      // Price-sorted listings
+productSchema.index({ average_rating: -1, status: 1 });  // Top-rated products listing
+productSchema.index({ createdAt: -1 });                  // Newest products
+productSchema.index({ status: 1, createdAt: -1 });       // Admin moderation queue (PENDING_APPROVAL sorted by age)
 
 module.exports = mongoose.model('Product', productSchema);

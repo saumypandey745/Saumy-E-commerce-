@@ -42,7 +42,7 @@ export default function AIAssistant() {
       // Call the AI Service via API Gateway
       // API Gateway maps /api/ai to AI Service
       // AI Service exposes /api/ml/chat
-      const res = await api.post('/api/ai/api/ml/chat', {
+      const res = await api.post('/api/v1/ai/api/ml/chat', {
         user_id: user?.id || 'guest',
         message: userMessage.content
       });

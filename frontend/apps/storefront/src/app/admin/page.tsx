@@ -24,7 +24,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await api.get('/api/admin/stats');
+        const res = await api.get('/api/v1/admin/stats');
         if (res.data.success) {
           setStatsData(res.data.data);
         }
@@ -34,7 +34,7 @@ export default function AdminDashboard() {
     };
     const fetchModeration = async () => {
       try {
-        const res = await api.get('/api/admin/moderation').catch(() => ({ data: { success: true, queue: [] } }));
+        const res = await api.get('/api/v1/admin/moderation').catch(() => ({ data: { success: true, queue: [] } }));
         if (res.data.success) {
           setModerationQueue(res.data.queue);
         }
@@ -44,7 +44,7 @@ export default function AdminDashboard() {
     };
     const fetchPendingSellers = async () => {
       try {
-        const res = await api.get('/api/admin/sellers/pending').catch(() => ({ data: { success: true, sellers: [] } }));
+        const res = await api.get('/api/v1/admin/sellers/pending').catch(() => ({ data: { success: true, sellers: [] } }));
         if (res.data.success) {
           setPendingSellers(res.data.sellers);
         }
@@ -59,7 +59,7 @@ export default function AdminDashboard() {
 
   const handleSellerStatusUpdate = async (id: string, status: string) => {
     try {
-      const res = await api.put(`/api/admin/sellers/${id}/status`, { status });
+      const res = await api.put(`/api/v1/admin/sellers/${id}/status`, { status });
       if (res.data.success) {
         alert(`Seller marked as ${status}`);
         setPendingSellers(prev => prev.filter(s => s._id !== id));

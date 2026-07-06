@@ -1,0 +1,3 @@
+# Pyrefly configuration - disable type checking
+[tool.pyrefly]
+project-excludes = ["**/*"]

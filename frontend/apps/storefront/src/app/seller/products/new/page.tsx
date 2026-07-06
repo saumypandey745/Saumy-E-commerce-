@@ -54,7 +54,7 @@ export default function NewProductPage() {
         }]
       };
 
-      const res = await api.post('/api/sellers/products', payload);
+      const res = await api.post('/api/v1/sellers/products', payload);
       
       if (res.data.success) {
         const productId = res.data.product?._id || res.data.product?.id;
@@ -64,7 +64,7 @@ export default function NewProductPage() {
           for (const file of selectedFiles) {
             const formData = new FormData();
             formData.append('image', file);
-            await api.post(`/api/sellers/products/${productId}/upload-image`, formData);
+            await api.post(`/api/v1/sellers/products/${productId}/upload-image`, formData);
           }
         }
         

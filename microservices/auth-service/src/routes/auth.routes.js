@@ -40,7 +40,10 @@ router.get('/audit-logs', authMiddleware, auditController.getAuditLogs);
 // Admin Only Example (RBAC Test)
 router.get('/admin/logs', authMiddleware, requireRole(['ADMIN', 'SUPER_ADMIN']), auditController.getAuditLogs);
 
-// Internal/Admin role update
-router.put('/user/:id/role', authController.updateUserRole);
+// MED-08: Role update now protected — only SUPER_ADMIN can assign ADMIN/SUPER_ADMIN
+router.put('/user/:id/role', authMiddleware, requireRole(['ADMIN', 'SUPER_ADMIN']), authController.updateUserRole);
+
+// CRIT-07: Real user count for admin stats dashboard (replaces hardcoded 12450 in gateway)
+router.get('/admin/users/count', authMiddleware, requireRole(['ADMIN', 'SUPER_ADMIN']), authController.getUserCount);
 
 module.exports = router;

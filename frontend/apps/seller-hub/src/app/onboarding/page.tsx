@@ -43,7 +43,7 @@ export default function OnboardingPage() {
     setError('');
 
     try {
-      const res = await api.post('/api/sellers/onboard', formData);
+      const res = await api.post('/api/v1/sellers/onboard', formData);
       if (res.data.success) {
         updateUser({ role: 'SELLER' });
         setStep(2); // Move to KYC
@@ -67,7 +67,7 @@ export default function OnboardingPage() {
     fd.append('doc_type', 'IDENTITY');
 
     try {
-      const res = await api.post('/api/sellers/kyc', fd, {
+      const res = await api.post('/api/v1/sellers/kyc', fd, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (res.data.success) {

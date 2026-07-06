@@ -2,35 +2,61 @@ const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
 const dbDialect = process.env.DB_DIALECT || 'sqlite';
+console.log(`[Order Service] Database dialect: ${dbDialect}`);
 
-console.log(`[Order Service] Database dialect is set to: ${dbDialect}`);
+let sequelize;
 
-const sequelize = dbDialect === 'sqlite'
-    ? new Sequelize({
+if (dbDialect === 'postgres') {
+    // Production: PostgreSQL via DATABASE_URL (PaaS) or individual DB_* vars
+    if (process.env.DATABASE_URL) {
+        sequelize = new Sequelize(process.env.DATABASE_URL, {
+            dialect: 'postgres',
+            logging: false,
+            dialectOptions: {
+                ssl: process.env.DB_SSL === 'true'
+                    ? { require: true, rejectUnauthorized: false }
+                    : false
+            },
+            pool: { max: 10, min: 2, acquire: 30000, idle: 30000 }
+        });
+    } else {
+        sequelize = new Sequelize(
+            process.env.DB_NAME || 'order_db',
+            process.env.DB_USER || 'admin',
+            process.env.DB_PASS || 'adminpassword',
+            {
+                host: process.env.DB_HOST || 'postgres',
+                port: parseInt(process.env.DB_PORT || '5432', 10),
+                dialect: 'postgres',
+                logging: false,
+                pool: { max: 10, min: 2, acquire: 30000, idle: 30000 }
+            }
+        );
+    }
+} else {
+    // Local dev fallback: SQLite
+    sequelize = new Sequelize({
         dialect: 'sqlite',
         storage: process.env.DB_STORAGE || './order_db.sqlite',
         logging: false,
-      })
-    : new Sequelize(
-        process.env.DB_NAME || 'order_db',
-        process.env.DB_USER || 'admin',
-        process.env.DB_PASS || 'adminpassword',
-        {
-            host: process.env.DB_HOST || 'localhost',
-            port: process.env.DB_PORT || 5432,
-            dialect: 'postgres',
-            logging: false,
-        }
-      );
+    });
+}
 
 const connectDB = async () => {
     try {
         await sequelize.authenticate();
-        console.log(`Database connected successfully using ${dbDialect} (Order Service).`);
-        await sequelize.sync();
+        console.log(`[Order Service] ${dbDialect.toUpperCase()} connected successfully.`);
+
+        // CRIT-04: Never auto-sync schema in production — run Sequelize migrations
+        if (dbDialect !== 'postgres' || process.env.NODE_ENV !== 'production') {
+            await sequelize.sync({ alter: true });
+            console.log('[Order Service] Schema synced (dev mode).');
+        } else {
+            console.log('[Order Service] Production mode — skipping auto-sync. Run migrations manually.');
+        }
     } catch (error) {
-        console.error('Unable to connect to the database:', error);
-        process.exit(1);
+        console.error('[Order Service] Database connection failed:', error.message);
+        process.exit(1); // Fail fast — service cannot operate without database
     }
 };
 

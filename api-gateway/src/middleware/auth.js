@@ -1,6 +1,10 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey_12345';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    console.error('[FATAL] JWT_SECRET environment variable is not set. Server cannot start securely.');
+    process.exit(1);
+}
 
 /**
  * RBAC Permission Matrix defining which roles can access which API prefixes.
@@ -50,6 +54,7 @@ const authorize = (req, res, next) => {
         (req.path.startsWith('/api/reviews') && req.method === 'GET') ||
         req.path.startsWith('/api/ai') ||
         req.path.startsWith('/api/ml') ||
+        req.path.startsWith('/api/resilience') ||
         req.path === '/health' ||
         req.path === '/metrics'
     ) {
@@ -64,17 +69,17 @@ const authorize = (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
 
-    // Developer bypasses for mockup testing
-    if (token === 'admin-mock-token') {
+    // ⚠️  DEV-ONLY mock bypass tokens — NEVER active in production
+    if (process.env.NODE_ENV !== 'production' && token === 'admin-mock-token') {
         req.user = { id: 'admin-mock-id', role: 'ADMIN' };
-    } else if (token === 'superadmin-mock-token') {
+    } else if (process.env.NODE_ENV !== 'production' && token === 'superadmin-mock-token') {
         req.user = { id: 'superadmin-mock-id', role: 'SUPER_ADMIN' };
-    } else if (token === 'seller-mock-token') {
+    } else if (process.env.NODE_ENV !== 'production' && token === 'seller-mock-token') {
         req.user = { id: 'seller-mock-id', role: 'SELLER' };
-    } else if (token === 'customer-mock-token') {
+    } else if (process.env.NODE_ENV !== 'production' && token === 'customer-mock-token') {
         req.user = { id: 'customer-mock-id', role: 'CUSTOMER' };
     } else {
-        // Real JWT Verification
+        // Real JWT Verification — always active
         try {
             const decoded = jwt.verify(token, JWT_SECRET);
             req.user = decoded;
@@ -99,9 +104,13 @@ const authorize = (req, res, next) => {
     // For a strict system, default to blocked unless it's a known endpoint.
     // Since this is evolving, if we didn't define it in the matrix but required auth, we allow.
     if (!allowedRoles || allowedRoles.includes('*') || allowedRoles.includes(role)) {
-        // Inject verified user headers into downstream requests
+        // Inject verified user context into downstream requests
         req.headers['x-user-id'] = req.user.id;
         req.headers['x-user-role'] = req.user.role;
+        // Propagate correlation ID for distributed tracing
+        if (req.headers['x-request-id']) {
+            req.headers['x-request-id'] = req.headers['x-request-id'];
+        }
         
         // Strict ownership: always inject x-seller-id for sellers to prevent malicious payload overrides
         if (role === 'SELLER') {

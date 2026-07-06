@@ -26,7 +26,7 @@ export default function ProductsPage() {
     const fetchProducts = async () => {
       if (!user?.id) return;
       try {
-        const res = await api.get(`/api/products?seller_id=${user.id}`);
+        const res = await api.get(`/api/v1/products?seller_id=${user.id}`);
         if (res.data.success && res.data.products) {
           setProducts(res.data.products);
         }
@@ -43,7 +43,7 @@ export default function ProductsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to archive this product?')) return;
     try {
-      const res = await api.delete(`/api/sellers/products/${id}`);
+      const res = await api.delete(`/api/v1/sellers/products/${id}`);
       if (res.data.success) {
         setProducts(products.map(p => p._id === id ? { ...p, status: 'ARCHIVED' } : p));
       }

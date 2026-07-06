@@ -29,8 +29,8 @@ export default function Dashboard() {
     const fetchDashboardData = async () => {
       try {
         const [analyticsRes, productsRes] = await Promise.all([
-          api.get('/api/orders/analytics/seller'),
-          api.get(`/api/products?seller_id=${user?.id}`)
+          api.get('/api/v1/orders/analytics/seller'),
+          api.get(`/api/v1/products?seller_id=${user?.id}`)
         ]);
 
         if (analyticsRes.data.success) {

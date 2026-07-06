@@ -25,7 +25,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/api/auth/login', { email, password });
+      const response = await api.post('/api/v1/auth/login', { email, password });
       if (response.data.success) {
         const token = response.data.accessToken || response.data.token;
         const role = response.data.user.role || 'CUSTOMER';
@@ -64,7 +64,7 @@ export default function LoginPage() {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setIsLoading(true);
     try {
-      const response = await api.post('/api/auth/google', {
+      const response = await api.post('/api/v1/auth/google', {
         credential: credentialResponse.credential,
       });
 

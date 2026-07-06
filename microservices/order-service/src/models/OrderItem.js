@@ -28,8 +28,10 @@ const OrderItem = sequelize.define('OrderItem', {
         allowNull: false,
         defaultValue: 1
     },
+    // CRIT-04: DECIMAL(12,2) — legally binding purchase price must be exact
+    // FLOAT caused IEEE 754 rounding errors (e.g. $9.99 stored as $9.990000000000001)
     price_at_purchase: {
-        type: DataTypes.FLOAT,
+        type: DataTypes.DECIMAL(12, 2),
         allowNull: false,
     },
     fulfillment_status: {

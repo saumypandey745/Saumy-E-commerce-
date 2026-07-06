@@ -28,11 +28,17 @@ exports.createProduct = async (req, res, next) => {
         // Calculate total inventory
         const total_inventory_count = variants.reduce((sum, v) => sum + (v.inventory_count || 0), 0);
 
+        // Calculate final_price
+        const base_price = req.body.base_price || 0;
+        const discount_percentage = req.body.discount_percentage || 0;
+        const final_price = req.body.final_price || (base_price * (1 - (discount_percentage / 100)));
+
         const product = new Product({
             ...req.body,
             slug,
             variants,
             total_inventory_count,
+            final_price,
             status: req.body.status || 'DRAFT', // Allow override for testing
             seller_id: req.user ? req.user.id : (req.body.seller_id || 'mock_seller_id')
         });

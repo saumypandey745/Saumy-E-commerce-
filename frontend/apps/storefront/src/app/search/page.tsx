@@ -26,7 +26,7 @@ function SearchResults() {
     const fetchResults = async () => {
       setLoading(true);
       try {
-        let url = `/api/search?q=${encodeURIComponent(query)}&limit=20`;
+        let url = `/api/v1/search?q=${encodeURIComponent(query)}&limit=20`;
         if (selectedCategory) url += `&category=${encodeURIComponent(selectedCategory)}`;
         if (selectedBrand) url += `&brand=${encodeURIComponent(selectedBrand)}`;
         

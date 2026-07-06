@@ -206,24 +206,27 @@ exports.getProfile = async (req, res, next) => {
     try {
         const { User, Profile } = require('../models');
         
-        // Find or create the profile to guarantee one exists for the customer
-        const [profile, created] = await Profile.findOrCreate({
-            where: { user_id: req.user.id },
-            defaults: {
-                first_name: req.user.full_name ? req.user.full_name.split(' ')[0] : '',
-                last_name: req.user.full_name ? req.user.full_name.split(' ').slice(1).join(' ') : '',
-                phone_number: req.user.phone || '',
-                addresses: []
-            }
-        });
-
         const user = await User.findByPk(req.user.id, {
             attributes: { exclude: ['password_hash', 'two_factor_secret'] },
             include: [{ model: Profile }]
         });
+
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
+
+        // If profile doesn't exist, create it
+        if (!user.Profile) {
+            const newProfile = await Profile.create({
+                user_id: req.user.id,
+                first_name: user.full_name ? user.full_name.split(' ')[0] : '',
+                last_name: user.full_name ? user.full_name.split(' ').slice(1).join(' ') : '',
+                phone_number: user.phone || '',
+                addresses: []
+            });
+            user.setDataValue('Profile', newProfile);
+        }
+
         res.status(200).json({ success: true, user });
     } catch (error) {
         next(error);
@@ -275,20 +278,52 @@ exports.updateUserRole = async (req, res, next) => {
         const { User } = require('../models');
         const { role } = req.body;
         const { id } = req.params;
-        
+
+        // MED-08: Validate role is a legal enum value
+        const VALID_ROLES = ['CUSTOMER', 'SELLER', 'ADMIN', 'SUPER_ADMIN'];
+        if (!role || !VALID_ROLES.includes(role)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}`
+            });
+        }
+
+        // MED-08: Privilege escalation protection
+        // Only SUPER_ADMIN can assign ADMIN or SUPER_ADMIN roles
+        const PRIVILEGED_ROLES = ['ADMIN', 'SUPER_ADMIN'];
+        const callerRole = req.user?.role;
+        if (PRIVILEGED_ROLES.includes(role) && callerRole !== 'SUPER_ADMIN') {
+            console.warn(`[AuthController] Role escalation attempt blocked. Caller: ${callerRole}, Target role: ${role}, User ID: ${req.user?.id}`);
+            return res.status(403).json({
+                success: false,
+                message: `Forbidden: Only SUPER_ADMIN can assign the '${role}' role.`
+            });
+        }
+
         const user = await User.findByPk(id);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
-        
+
         user.role = role;
         await user.save();
-        
+
         res.status(200).json({
             success: true,
             message: 'User role updated successfully',
             user: { id: user.id, email: user.email, role: user.role }
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// CRIT-07: Real user count for admin stats dashboard
+exports.getUserCount = async (req, res, next) => {
+    try {
+        const { User } = require('../models');
+        const count = await User.count();
+        res.status(200).json({ success: true, count });
     } catch (error) {
         next(error);
     }

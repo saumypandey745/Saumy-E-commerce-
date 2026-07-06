@@ -12,6 +12,30 @@ services:
     - redis_data:/data
     networks:
     - ecommerce-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # CRIT-04: PostgreSQL for order-service and payment-service (replaces SQLite)
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-adminpassword}
+      POSTGRES_MULTIPLE_DATABASES: order_db,payment_db
+    volumes:
+    - postgres_data:/var/lib/postgresql/data
+    - ./scripts/init-multiple-postgres-dbs.sh:/docker-entrypoint-initdb.d/init-dbs.sh
+    networks:
+    - ecommerce-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
   rabbitmq:
     image: rabbitmq:3-management-alpine
     ports:
@@ -69,6 +93,12 @@ services:
     - redis
     networks:
     - ecommerce-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
   product-service:
     build:
       context: .
@@ -80,42 +110,77 @@ services:
     - RABBITMQ_URL=amqp://admin:adminpassword@rabbitmq:5672
     - MINIO_ENDPOINT=minio
     - MINIO_PORT=9000
-    - MINIO_ACCESS_KEY=admin
-    - MINIO_SECRET_KEY=adminpassword
-    - JWT_SECRET=supersecretjwtkey_12345
+    - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-admin}
+    - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-adminpassword}
+    - JWT_SECRET=${JWT_SECRET}
     depends_on:
     - mongo
     - redis
     - rabbitmq
     networks:
     - ecommerce-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
   order-service:
     build:
       context: .
       dockerfile: ./microservices/order-service/Dockerfile
     environment:
     - PORT=8004
+    - NODE_ENV=development
+    # CRIT-04: Use PostgreSQL in Docker
+    - DB_DIALECT=postgres
+    - DB_HOST=postgres
+    - DB_NAME=order_db
+    - DB_USER=admin
+    - DB_PASS=${POSTGRES_PASSWORD:-adminpassword}
+    - REDIS_URL=redis://redis:6379
     - RABBITMQ_URL=amqp://admin:adminpassword@rabbitmq:5672
     - PRODUCT_SERVICE_URL=http://product-service:8003
-    - JWT_SECRET=supersecretjwtkey_12345
+    - JWT_SECRET=${JWT_SECRET}
     depends_on:
     - rabbitmq
     - product-service
+    - postgres
     networks:
     - ecommerce-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
   payment-service:
     build:
       context: .
       dockerfile: ./microservices/payment-service/Dockerfile
     environment:
     - PORT=8006
+    - NODE_ENV=development
+    # CRIT-04: Use PostgreSQL in Docker
+    - DB_DIALECT=postgres
+    - DB_HOST=postgres
+    - DB_NAME=payment_db
+    - DB_USER=admin
+    - DB_PASS=${POSTGRES_PASSWORD:-adminpassword}
     - RABBITMQ_URL=amqp://admin:adminpassword@rabbitmq:5672
-    - STRIPE_SECRET_KEY=sk_test_mock123
-    - JWT_SECRET=supersecretjwtkey_12345
+    - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_mock123}
+    - JWT_SECRET=${JWT_SECRET}
     depends_on:
     - rabbitmq
+    - postgres
     networks:
     - ecommerce-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
   cart-service:
     build:
       context: .
@@ -123,11 +188,17 @@ services:
     environment:
     - PORT=8007
     - REDIS_URL=redis://redis:6379
-    - JWT_SECRET=supersecretjwtkey_12345
+    - JWT_SECRET=${JWT_SECRET}
     depends_on:
     - redis
     networks:
     - ecommerce-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
   search-service:
     build:
       context: .
@@ -186,19 +257,26 @@ services:
       context: ./microservices/monitoring-service
       dockerfile: Dockerfile
     ports:
-    - 8006:8006
+    # HIGH-03: Fixed port collision — was 8006:8006 which conflicted with payment-service
+    - 8011:8011
     volumes:
     - /var/run/docker.sock:/var/run/docker.sock
     environment:
-    - PORT=8006
+    - PORT=8011
     - MONGO_URI=mongodb://mongo:27017/ecommerce
     - REDIS_URL=redis://redis:6379
-    - JWT_SECRET=supersecretjwtkey_12345
+    - JWT_SECRET=${JWT_SECRET}
     depends_on:
     - mongo
     - redis
     networks:
     - ecommerce-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8011/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
   review-service:
     build:
       context: .
@@ -221,7 +299,9 @@ services:
     - 8000:8000
     environment:
     - PORT=8000
+    - NODE_ENV=development
     - REDIS_URL=redis://redis:6379
+    - JWT_SECRET=${JWT_SECRET}
     - AUTH_SERVICE_URL=http://auth-service:8001
     - PRODUCT_SERVICE_URL=http://product-service:8003
     - ORDER_SERVICE_URL=http://order-service:8004
@@ -231,7 +311,8 @@ services:
     - REVIEW_SERVICE_URL=http://review-service:8009
     - AIML_SERVICE_URL=http://ai-ml-service:8010
     - AI_SERVICE_URL=http://ai-service:8005
-    - JWT_SECRET=supersecretjwtkey_12345
+    # CRIT-06: Explicit CORS allowlist — add production domains here
+    - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:3002
     depends_on:
     - redis
     - auth-service
@@ -243,6 +324,12 @@ services:
     - review-service
     networks:
     - ecommerce-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
   storefront:
     build:
       context: ./frontend/apps/storefront
@@ -252,7 +339,8 @@ services:
     ports:
     - 3000:3000
     environment:
-    - NEXT_PUBLIC_API_URL=http://localhost:8000
+    - API_URL=http://api-gateway:8000
+    - NEXT_PUBLIC_API_URL=${API_URL_EXTERNAL:-http://localhost:8000}
     - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-1079312831480-8hth9o4voo676a9kolh521jcrq6f48pi.apps.googleusercontent.com}
     depends_on:
     - api-gateway
@@ -266,7 +354,8 @@ services:
     ports:
     - 3001:3000
     environment:
-    - NEXT_PUBLIC_API_URL=http://localhost:8000
+    - API_URL=http://api-gateway:8000
+    - NEXT_PUBLIC_API_URL=${API_URL_EXTERNAL:-http://localhost:8000}
     depends_on:
     - api-gateway
     networks:
@@ -279,7 +368,8 @@ services:
     ports:
     - 3002:3000
     environment:
-    - NEXT_PUBLIC_API_URL=http://localhost:8000
+    - API_URL=http://api-gateway:8000
+    - NEXT_PUBLIC_API_URL=${API_URL_EXTERNAL:-http://localhost:8000}
     depends_on:
     - api-gateway
     networks:
@@ -304,3 +394,5 @@ volumes:
   rabbitmq_data: null
   es_data: null
   minio_data: null
+  # CRIT-04: PostgreSQL persistent volume
+  postgres_data: null

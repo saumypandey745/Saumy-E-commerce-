@@ -77,7 +77,7 @@ export default function ProfilePage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get('/api/profile');
+      const res = await api.get('/api/v1/profile');
       if (res.data.success && res.data.user) {
         const u = res.data.user;
         setUserProfile(u);
@@ -98,7 +98,7 @@ export default function ProfilePage() {
   const fetchOrders = async () => {
     setLoadingOrders(true);
     try {
-      const res = await api.get('/api/orders');
+      const res = await api.get('/api/v1/orders');
       if (res.data.success) {
         setOrders(res.data.orders || []);
       }
@@ -113,7 +113,7 @@ export default function ProfilePage() {
     e.preventDefault();
     setSavingInfo(true);
     try {
-      const res = await api.put('/api/profile', {
+      const res = await api.put('/api/v1/profile', {
         first_name: firstName,
         last_name: lastName,
         phone_number: phone
@@ -143,7 +143,7 @@ export default function ProfilePage() {
     };
 
     try {
-      const res = await api.put('/api/profile', {
+      const res = await api.put('/api/v1/profile', {
         addresses: [...currentAddresses, newAddr]
       });
       if (res.data.success) {
@@ -165,7 +165,7 @@ export default function ProfilePage() {
     const updated = currentAddresses.filter((a: any) => a.id !== id);
 
     try {
-      const res = await api.put('/api/profile', {
+      const res = await api.put('/api/v1/profile', {
         addresses: updated
       });
       if (res.data.success) {

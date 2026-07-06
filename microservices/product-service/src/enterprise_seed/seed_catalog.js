@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
-const Category = require('../../microservices/product-service/src/models/Category');
-const Product = require('../../microservices/product-service/src/models/Product');
-const Brand = require('../../microservices/product-service/src/models/Brand');
+const { faker } = require('@faker-js/faker');
+const Category = require('../models/Category');
+const Product = require('../models/Product');
+const Brand = require('../models/Brand');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ecommerce_products';
 const BATCH_SIZE = 1000; // Smaller batches for massive documents

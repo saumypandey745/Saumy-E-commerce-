@@ -36,7 +36,7 @@ export default function Home() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await api.get('/api/products');
+        const res = await api.get('/api/v1/products');
         if (res.data.success && res.data.products.length > 0) {
            const mapped = res.data.products.map((p: any) => ({
              id: p._id,

@@ -41,7 +41,7 @@ export default function FloatingChatWidget() {
     setIsLoading(true);
 
     try {
-      const res = await api.post('/api/ai/chat', {
+      const res = await api.post('/api/v1/ai/chat', {
         user_id: user?.id || 'guest',
         message: text
       });
