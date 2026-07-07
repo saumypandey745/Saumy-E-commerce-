@@ -1,0 +1,231 @@
+{
+  "fake_data": [
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/frontend/apps/storefront/src/lib/api.ts",
+      "issue": "Uses localStorage for Auth/Tokens (Insecure/Fake)"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/frontend/apps/storefront/src/app/store.ts",
+      "issue": "Uses localStorage for Auth/Tokens (Insecure/Fake)"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/frontend/apps/seller-hub/src/lib/api.ts",
+      "issue": "Uses localStorage for Auth/Tokens (Insecure/Fake)"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/frontend/apps/admin-dashboard/src/lib/api.ts",
+      "issue": "Uses localStorage for Auth/Tokens (Insecure/Fake)"
+    }
+  ],
+  "todos": [],
+  "hardcoded_secrets": [
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/frontend/apps/storefront/src/app/checkout/page.tsx",
+      "line": 119,
+      "match": "key=\"step1\""
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/frontend/apps/storefront/src/app/checkout/page.tsx",
+      "line": 159,
+      "match": "key=\"step2\""
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/frontend/apps/storefront/src/app/products/[id]/page.tsx",
+      "line": 461,
+      "match": "key=\"desc\""
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/frontend/apps/storefront/src/app/products/[id]/page.tsx",
+      "line": 485,
+      "match": "key=\"specs\""
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/frontend/apps/storefront/src/app/products/[id]/page.tsx",
+      "line": 537,
+      "match": "key=\"shipping\""
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/frontend/apps/storefront/src/app/products/[id]/page.tsx",
+      "line": 578,
+      "match": "key=\"reviews\""
+    }
+  ],
+  "endpoints": [
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/ai-service/src/index.js",
+      "route": "app.post('/recommendations', async (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/ai-service/src/index.js",
+      "route": "app.post('/search', async (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/ai-service/src/index.js",
+      "route": "app.post('/chat', async (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/ai-service/src/index.js",
+      "route": "app.get('/health', (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/review-service/src/index.js",
+      "route": "app.get('/openapi.json', (req, res) => res.sendFile(require('path').join(__dirname, 'openapi.json')));"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/review-service/src/index.js",
+      "route": "app.get('/health', (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/payment-service/src/index.js",
+      "route": "app.get('/openapi.json', (req, res) => res.sendFile(require('path').join(__dirname, 'openapi.json')));"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/payment-service/src/index.js",
+      "route": "app.get('/health', (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/order-service/src/index.js",
+      "route": "app.get('/openapi.json', (req, res) => res.sendFile(require('path').join(__dirname, 'openapi.json')));"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/order-service/src/index.js",
+      "route": "app.get('/health', (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/search-service/src/index.js",
+      "route": "app.get('/health', (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/product-service/src/index.js",
+      "route": "app.get('/openapi.json', (req, res) => res.sendFile(require('path').join(__dirname, 'openapi.json')));"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/product-service/src/index.js",
+      "route": "app.get('/health', (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/monitoring-service/src/index.js",
+      "route": "app.get('/health', (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/monitoring-service/src/index.js",
+      "route": "app.get('/api/v1/monitoring/stream', sseController.streamMetrics);"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/monitoring-service/src/index.js",
+      "route": "app.get('/api/v1/monitoring/reports/system', require('./controllers/reportController').exportSystemReport);"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/monitoring-service/src/index.js",
+      "route": "app.get('/api/v1/monitoring/containers/:name/logs', async (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/cart-service/src/index.js",
+      "route": "app.get('/openapi.json', (req, res) => res.sendFile(require('path').join(__dirname, 'openapi.json')));"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/cart-service/src/index.js",
+      "route": "app.get('/health', (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/auth-service/src/index.js",
+      "route": "app.get(\"/health\", (req, res) => res.status(200).json({ status: \"OK\", service: \"auth-service\" }));"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/auth-service/src/index.js",
+      "route": "app.get('/openapi.json', (req, res) => res.sendFile(require('path').join(__dirname, 'openapi.json')));"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/api-gateway/src/index.js",
+      "route": "app.get('/api/v1/admin/stats', async (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/api-gateway/src/index.js",
+      "route": "app.get('/health', (req, res) => {"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/api-gateway/src/index.js",
+      "route": "app.get('/metrics', async (req, res) => {"
+    }
+  ],
+  "schemas": [
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/approve_all_kyc.js",
+      "schema_def": "const StoreProfile = mongoose.models.StoreProfile || mongoose.model('StoreProfile', new mongoose.Schema({}, { strict: false }));"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/ai-service/src/index.js",
+      "schema_def": "const Product = mongoose.models.Product || mongoose.model('Product', new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/review-service/src/models/Review.js",
+      "schema_def": "const reviewSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/payment-service/src/models/SellerPayout.js",
+      "schema_def": "const sellerPayoutSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/payment-service/src/models/SellerTransaction.js",
+      "schema_def": "const sellerTransactionSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/payment-service/src/models/SellerWallet.js",
+      "schema_def": "const sellerWalletSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/search-service/src/syncProducts.js",
+      "schema_def": "const ProductSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/product-service/src/models/Brand.js",
+      "schema_def": "const brandSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/product-service/src/models/SellerAnalytics.js",
+      "schema_def": "const sellerAnalyticsSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/product-service/src/models/StoreProfile.js",
+      "schema_def": "const storeProfileSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/product-service/src/models/InventoryLog.js",
+      "schema_def": "const inventoryLogSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/product-service/src/models/Category.js",
+      "schema_def": "const categorySchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/product-service/src/models/Product.js",
+      "schema_def": "const variantSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/product-service/src/models/Product.js",
+      "schema_def": "const productSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/monitoring-service/src/models/Incident.js",
+      "schema_def": "const incidentSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/cart-service/src/models/Wishlist.js",
+      "schema_def": "const wishlistItemSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/cart-service/src/models/Wishlist.js",
+      "schema_def": "const wishlistSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/cart-service/src/models/Cart.js",
+      "schema_def": "const cartItemSchema = new mongoose.Schema({"
+    },
+    {
+      "file": "/home/saumy/portproject/ecommerce-enterprise/microservices/cart-service/src/models/Cart.js",
+      "schema_def": "const cartSchema = new mongoose.Schema({"
+    }
+  ],
+  "vulnerabilities": [],
+  "missing_tests": []
+}

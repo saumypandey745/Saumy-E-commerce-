@@ -5,9 +5,9 @@ const { connectDB } = require('./config/db');
 const { connectRabbitMQ, getBrokerMode } = require('./config/rabbitmq');
 const { startSagaConsumers } = require('./consumers/saga.consumer');
 const orderRoutes = require('./routes/order.routes');
-const { errorHandler } = require('@ecommerce/shared');
+const { errorHandler, metrics } = require('@ecommerce/shared');
 
-const app = express();\n
+const app = express();
 // --- BEGIN ENTERPRISE STRUCTURED LOGGING ---
 const { AsyncLocalStorage } = require('async_hooks');
 const asyncLocalStorage = new AsyncLocalStorage();
@@ -36,28 +36,41 @@ app.use((req, res, next) => {
 
 const PORT = process.env.PORT || 8004;
 
-// Connect DB & MQ
-connectDB();
-connectRabbitMQ().then(() => {
-    startSagaConsumers();
-});
 
 app.use(cors());
 app.use(express.json());
 app.get('/openapi.json', (req, res) => res.sendFile(require('path').join(__dirname, 'openapi.json')));
 
 // Routes
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'OK', service: 'order-service', database: 'connected', messageBroker: getBrokerMode() });
+app.get('/metrics', metrics.getMetrics);
+app.use(metrics.metricsMiddleware);
+app.get('/health', async (req, res) => {
+    try {
+        const { sequelize } = require('./config/db');
+        await sequelize.authenticate();
+        res.status(200).json({ status: 'OK', service: 'order-service', database: 'connected', messageBroker: getBrokerMode() });
+    } catch (err) {
+        res.status(503).json({ status: 'ERROR', service: 'order-service', database: 'disconnected' });
+    }
 });
 app.use('/', orderRoutes); // Gateway maps /api/orders to /
+app.use('/coupons', require('./routes/coupon.routes'));
 
 // Error Handler
 app.use(errorHandler);
 
-const server = app.listen(PORT, () => {
-    console.log(`[Order Service] Running on port ${PORT}`);
-});
+let server;
+if (require.main === module) {
+    // Connect DB & MQ
+    connectDB();
+    connectRabbitMQ().then(() => {
+        startSagaConsumers();
+    });
+
+    server = app.listen(PORT, () => {
+        console.log(`[Order Service] Running on port ${PORT}`);
+    });
+}
 
 // MED-02: Graceful shutdown — critical for Kubernetes rolling deploys
 // SIGTERM is sent by K8s before pod termination; SIGINT is Ctrl+C in dev
@@ -86,4 +99,7 @@ const gracefulShutdown = async (signal) => {
 };
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
+
+module.exports = app;

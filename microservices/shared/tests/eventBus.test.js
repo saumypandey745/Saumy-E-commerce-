@@ -3,7 +3,6 @@ const broker = require('../eventBus');
 describe('InMemoryBroker', () => {
   beforeEach(() => {
     // Clear listeners before each test
-    broker.removeAllListeners();
     broker.queues.clear();
   });
 
@@ -26,6 +25,8 @@ describe('InMemoryBroker', () => {
 
     const payload = { data: 'hello' };
     broker.publish('test_exchange', 'test.event', Buffer.from(JSON.stringify(payload)));
+    
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     expect(receivedMsg).not.toBeNull();
     expect(receivedMsg.data).toBe('hello');
@@ -45,6 +46,8 @@ describe('InMemoryBroker', () => {
     await broker.consume('q2', () => { count2++; });
 
     broker.publish('test_exchange', 'test.broadcast', Buffer.from(JSON.stringify({ ok: 1 })));
+
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     expect(count1).toBe(1);
     expect(count2).toBe(1);

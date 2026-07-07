@@ -12,6 +12,9 @@ const startSagaConsumers = async () => {
     await channel.bindQueue(q.queue, 'ecommerce_events', 'event.product.stock_failed');
     await channel.bindQueue(q.queue, 'ecommerce_events', 'event.payment.success');
     await channel.bindQueue(q.queue, 'ecommerce_events', 'event.payment.failed');
+    await channel.bindQueue(q.queue, 'ecommerce_events', 'event.payment.refund_success');
+    await channel.bindQueue(q.queue, 'ecommerce_events', 'event.payment.refund_failed');
+    await channel.bindQueue(q.queue, 'ecommerce_events', 'event.product.restock_success');
 
     console.log('[Order Service] Saga Consumer listening for events...');
 
@@ -34,6 +37,15 @@ const startSagaConsumers = async () => {
                     break;
                 case 'event.payment.failed':
                     await orchestrator.handlePaymentFailed(content.order_id, content.items);
+                    break;
+                case 'event.payment.refund_success':
+                    await orchestrator.handleRefundSuccess(content.order_id);
+                    break;
+                case 'event.payment.refund_failed':
+                    await orchestrator.handleRefundFailed(content.order_id, content.reason);
+                    break;
+                case 'event.product.restock_success':
+                    await orchestrator.handleRestockSuccess(content.order_id);
                     break;
             }
             channel.ack(msg);

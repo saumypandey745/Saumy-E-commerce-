@@ -1,0 +1,25 @@
+{
+  "name": "@ecommerce/promotion-service",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "sequelize": "^6.33.0",
+    "pg": "^8.11.3",
+    "pg-hstore": "^2.3.4",
+    "amqplib": "^0.10.3",
+    "joi": "^17.11.0",
+    "@ecommerce/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
+  }
+}

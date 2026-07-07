@@ -33,6 +33,7 @@ const PERMISSIONS = {
     
     // Admin Routes
     '/api/admin': ['ADMIN', 'SUPER_ADMIN'],
+    '/api/v1/monitoring': ['ADMIN', 'SUPER_ADMIN'], // Only Super Admin and Admin can view system telemetry
     '/api/admin/system': ['SUPER_ADMIN'], // Only Super Admin can see System DevOps Health
     '/api/admin/audit-logs': ['SUPER_ADMIN']
 };
@@ -62,12 +63,19 @@ const authorize = (req, res, next) => {
     }
 
     // 2. Extract Token
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ success: false, message: 'Unauthorized: Missing or invalid token' });
+    let token = req.cookies?.accessToken;
+    
+    // Fallback to Authorization header
+    if (!token) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        }
     }
 
-    const token = authHeader.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'Unauthorized: Missing or invalid token' });
+    }
 
     // ⚠️  DEV-ONLY mock bypass tokens — NEVER active in production
     if (process.env.NODE_ENV !== 'production' && token === 'admin-mock-token') {

@@ -1,0 +1,14 @@
+{
+  "name": "@ecommerce/notification-service",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.3",
+    "dotenv": "^16.3.1",
+    "@ecommerce/shared": "workspace:*"
+  }
+}

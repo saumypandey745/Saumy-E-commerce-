@@ -4,7 +4,7 @@ const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/auth.routes');
-const { errorHandler } = require('@ecommerce/shared');
+const { errorHandler, metrics } = require('@ecommerce/shared');
 
 // Fail fast — auth-service is the identity authority
 // Starting with a missing secret would allow forged tokens to pass silently
@@ -13,8 +13,18 @@ if (!process.env.JWT_SECRET) {
     process.exit(1);
 }
 
-const app = express();\n
-app.get("/health", (req, res) => res.status(200).json({ status: "OK", service: "auth-service" }));
+const app = express();
+app.get('/metrics', metrics.getMetrics);
+app.use(metrics.metricsMiddleware);
+app.get("/health", async (req, res) => {
+    try {
+        const { sequelize } = require('./config/db');
+        await sequelize.authenticate();
+        res.status(200).json({ status: "OK", service: "auth-service", db: "connected" });
+    } catch (err) {
+        res.status(503).json({ status: "ERROR", service: "auth-service", db: "disconnected" });
+    }
+});
 // --- BEGIN ENTERPRISE STRUCTURED LOGGING ---
 const { AsyncLocalStorage } = require('async_hooks');
 const asyncLocalStorage = new AsyncLocalStorage();
@@ -44,16 +54,7 @@ app.use((req, res, next) => {
 app.set('trust proxy', true);
 const PORT = process.env.PORT || 8001;
 
-// Connect Database
-connectDB().then(() => {
-    console.log('[Auth Service] Database connected. Starting seeder check...');
-    const seed = require('./seed');
-    return seed();
-}).then(() => {
-    console.log('[Auth Service] Seeder check completed successfully.');
-}).catch((err) => {
-    console.error('[Auth Service] Error during database/seeder startup:', err);
-});
+
 
 // Auth-service only accepts requests from the API gateway and local dev tools
 const allowedOrigins = [
@@ -65,7 +66,7 @@ const allowedOrigins = [
 ];
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) return callback(null, true);
         return callback(new Error('CORS: Origin not allowed'));
     },
     credentials: true
@@ -76,13 +77,27 @@ app.use(cookieParser());
 
 // Routes
 app.use('/', authRoutes); // Gateway maps /api/auth to /
+app.use('/admin/users', require('./routes/admin.routes')); // Map for User Management
 
 // Error Handler Middleware
 app.use(errorHandler);
 
-const server = app.listen(PORT, () => {
-    console.log(`[Auth Service] Running on port ${PORT}`);
-});
+let server;
+if (require.main === module) {
+    // Connect Database
+    connectDB().then(() => {
+        console.log('[Auth Service] Database connected. Starting seeder check...');
+        const seed = require('./seed');
+        return seed();
+    }).then(() => {
+        console.log('[Auth Service] Seeder check completed successfully.');
+        server = app.listen(PORT, () => {
+            console.log(`[Auth Service] Running on port ${PORT}`);
+        });
+    }).catch((err) => {
+        console.error('[Auth Service] Error during database/seeder startup:', err);
+    });
+}
 
 // MED-02: Graceful shutdown
 const gracefulShutdown = async (signal) => {
@@ -101,4 +116,7 @@ const gracefulShutdown = async (signal) => {
 };
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
+
+module.exports = app;

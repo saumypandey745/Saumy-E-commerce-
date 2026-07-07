@@ -22,7 +22,7 @@ try {
 
 const path = require('path');
 
-const app = express();\n
+const app = express();
 // --- BEGIN ENTERPRISE STRUCTURED LOGGING ---
 const { AsyncLocalStorage } = require('async_hooks');
 const asyncLocalStorage = new AsyncLocalStorage();

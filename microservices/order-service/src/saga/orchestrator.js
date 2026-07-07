@@ -122,6 +122,75 @@ class SagaOrchestrator {
             items: finalItems
         });
     }
+
+    // --- PHASE 3: Return & Refund Saga ---
+    async startReturnSaga(orderId) {
+        console.log(`[SAGA] Starting Return Saga for order ${orderId}`);
+        const order = await Order.findByPk(orderId);
+        if (!order) return;
+
+        order.status = 'RETURN_PROCESSING';
+        await order.save();
+
+        publishEvent('command.payment.refund', {
+            order_id: orderId,
+            amount: order.total_amount
+        });
+    }
+
+    async handleRefundSuccess(orderId) {
+        const isNew = await acquireIdempotencyLock(orderId, 'refund_success');
+        if (!isNew) return;
+
+        console.log(`[SAGA] Refund successful for order ${orderId}. Restocking inventory...`);
+        const order = await Order.findByPk(orderId);
+        if (!order) return;
+
+        order.payment_status = 'REFUNDED';
+        await order.save();
+
+        const OrderItem = require('../models/OrderItem');
+        const orderItems = await OrderItem.findAll({ where: { order_id: orderId } });
+        const items = orderItems.map(oi => ({
+            product_id: oi.product_id,
+            sku: oi.sku,
+            quantity: oi.quantity
+        }));
+
+        publishEvent('command.product.restock', {
+            order_id: orderId,
+            items: items
+        });
+    }
+
+    async handleRefundFailed(orderId, reason) {
+        const isNew = await acquireIdempotencyLock(orderId, 'refund_failed');
+        if (!isNew) return;
+
+        console.log(`[SAGA] Refund failed for order ${orderId}: ${reason}`);
+        const order = await Order.findByPk(orderId);
+        if (!order) return;
+
+        order.status = 'RETURN_FAILED';
+        await order.save();
+
+        // Admin needs to handle this manually now.
+    }
+
+    async handleRestockSuccess(orderId) {
+        const isNew = await acquireIdempotencyLock(orderId, 'restock_success');
+        if (!isNew) return;
+
+        console.log(`[SAGA] Restock successful for order ${orderId}. Completing return...`);
+        const order = await Order.findByPk(orderId);
+        if (!order) return;
+
+        order.status = 'RETURN_COMPLETED';
+        await order.save();
+
+        // Fire notification
+        publishEvent('event.order.return_completed', { order_id: orderId, user_id: order.user_id });
+    }
 }
 
 module.exports = new SagaOrchestrator();

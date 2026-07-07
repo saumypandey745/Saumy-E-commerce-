@@ -12,6 +12,7 @@ const authorize = require('./middleware/auth');
 const { rateLimit } = require('express-rate-limit');
 const RedisStore = require('rate-limit-redis').default;
 const swaggerUi = require('swagger-ui-express');
+const cookieParser = require('cookie-parser');
 const { getAggregatedSwagger } = require('./swaggerAggregator');
 require('dotenv').config();
 
@@ -81,6 +82,9 @@ app.use('/api/sellers/products', (req, res, next) => {
     next();
 });
 
+// Middleware
+app.use(cookieParser());
+
 // CRIT-06: Explicit CORS allowlist — no wildcard origins
 const allowedOrigins = [
     'http://localhost:3000', // storefront (dev)
@@ -90,8 +94,8 @@ const allowedOrigins = [
 ];
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow server-to-server requests (no origin header) and listed origins
-        if (!origin || allowedOrigins.includes(origin)) {
+        // Allow server-to-server requests (no origin header), listed origins, and Vercel deployments
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
             return callback(null, true);
         }
         console.warn(`[CORS] Blocked request from unauthorized origin: ${origin}`);
@@ -301,6 +305,7 @@ const breakers = {
     search: new RedisCircuitBreaker('search-service'),
     review: new RedisCircuitBreaker('review-service'),
     aiml: new RedisCircuitBreaker('ai-ml-service'),
+    promotion: new RedisCircuitBreaker('promotion-service'),
     resilience: new RedisCircuitBreaker('resilience-service')
 };
 
@@ -432,6 +437,7 @@ const services = {
     search: process.env.SEARCH_SERVICE_URL || 'http://localhost:8008',
     review: process.env.REVIEW_SERVICE_URL || 'http://localhost:8009',
     aiml: process.env.AIML_SERVICE_URL || 'http://localhost:8010',
+    promotion: process.env.PROMOTION_SERVICE_URL || 'http://localhost:8012',
     // HIGH-03: monitoring moved to 8011 — was colliding with payment-service on 8006
     monitoring: process.env.MONITORING_SERVICE_URL || 'http://localhost:8011'
 };
@@ -447,6 +453,7 @@ const fallbacks = {
     search: { success: false, data: { total: 0, products: [], facets: {} }, message: "Search engine offline" },
     review: { success: false, data: { count: 0, total: 0, reviews: [] }, message: "Reviews are currently unavailable" },
     aiml: { success: false, recommended_product_ids: [], model_version: "fallback", confidence_score: 0 },
+    promotion: { success: false, message: "Promotions are currently unavailable" },
     resilience: { fallback: true, message: 'Offline Mock Fallback Active' }
 };
 
@@ -508,12 +515,15 @@ app.use('/api/v1/products', makeCachedBreakerProxy('product', services.product, 
 app.use('/api/v1/sellers/products/:id/upload-image', makeUploadProxy('product', services.product, fallbacks.product));
 app.use('/api/v1/sellers', makeBreakerProxy('product', services.product, fallbacks.product));
 app.use('/api/v1/admin/sellers', makeBreakerProxy('product', services.product, fallbacks.product));
+app.use('/api/v1/admin/users', makeBreakerProxy('auth', services.auth, fallbacks.auth));
+app.use('/api/v1/coupons', makeBreakerProxy('order', services.order, fallbacks.order));
 app.use('/api/v1/orders', makeBreakerProxy('order', services.order, fallbacks.order));
 // HIGH-03: monitoring now on port 8011 — fixed from hardcoded localhost:8006 (payment service collision)
 app.use('/api/v1/monitoring', makeBreakerProxy('resilience', services.monitoring, fallbacks.resilience));
 app.use('/api/v1/ai', makeBreakerProxy('ai', services.ai, fallbacks.ai));
 app.use('/api/v1/ml', makeBreakerProxy('aiml', services.aiml, fallbacks.aiml));
 app.use('/api/v1/payments', makeBreakerProxy('payment', services.payment, fallbacks.payment));
+app.use('/api/v1/promotions', makeBreakerProxy('promotion', services.promotion, fallbacks.promotion));
 app.use('/api/v1/cart', makeBreakerProxy('cart', services.cart, fallbacks.cart));
 app.use('/api/v1/wishlist', makeBreakerProxy('cart', services.cart, fallbacks.cart));
 app.use('/api/v1/search', makeCachedBreakerProxy('search', services.search, fallbacks.search));
@@ -572,8 +582,13 @@ app.get('/api/v1/admin/stats', async (req, res) => {
 });
 
 // Health Check
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'OK', message: 'API Gateway is running' });
+app.get('/health', async (req, res) => {
+    try {
+        await redisClient.ping();
+        res.status(200).json({ status: 'OK', message: 'API Gateway is running', redis: 'connected' });
+    } catch (err) {
+        res.status(503).json({ status: 'ERROR', message: 'API Gateway starting or Redis is down' });
+    }
 });
 
 // Centralized API Documentation

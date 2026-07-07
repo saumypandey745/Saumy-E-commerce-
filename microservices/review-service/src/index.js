@@ -6,7 +6,7 @@ const { connectRabbitMQ, getBrokerMode } = require('./config/rabbitmq');
 const mongoSanitize = require('express-mongo-sanitize');
 const reviewRoutes = require('./routes/review.routes');
 
-const app = express();\n
+const app = express();
 // --- BEGIN ENTERPRISE STRUCTURED LOGGING ---
 const { AsyncLocalStorage } = require('async_hooks');
 const asyncLocalStorage = new AsyncLocalStorage();
@@ -43,7 +43,6 @@ app.get('/openapi.json', (req, res) => res.sendFile(require('path').join(__dirna
 app.use(mongoSanitize());
 
 // Initialize DB & Event Mesh
-connectDB();
 connectRabbitMQ();
 
 // Health check
@@ -57,3 +56,5 @@ app.use('/', reviewRoutes);
 app.listen(PORT, () => {
     console.log(`Review Engine Service is running on port ${PORT}`);
 });
+
+module.exports = app;

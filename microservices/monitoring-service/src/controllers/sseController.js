@@ -2,13 +2,9 @@ const dockerService = require('../services/dockerService');
 const mongoService = require('../services/mongoStatsService');
 const { getRecentEvents } = require('../services/redisService');
 
-// In-memory global stats accumulator
 let globalStats = {
     api_calls: 0,
-    errors: 0,
-    active_users: 1240, // Simulated baseline
-    revenue_today: 45000,
-    pending_kyc: 142
+    errors: 0
 };
 
 exports.streamMetrics = (req, res) => {
@@ -37,6 +33,7 @@ exports.streamMetrics = (req, res) => {
         // 2. Fetch Polled Metrics
         const dockerMetrics = dockerService.getMetrics();
         const mongoMetrics = mongoService.getMongoStats();
+        const businessMetrics = mongoService.getBusinessStats();
 
         // 3. Construct Payload
         const payload = {
@@ -49,7 +46,12 @@ exports.streamMetrics = (req, res) => {
                 api_latency: Math.floor(Math.random() * 20 + 30) + 'ms' 
             },
             databaseHealth: mongoMetrics,
-            business: globalStats,
+            business: {
+                api_calls: globalStats.api_calls,
+                active_users: businessMetrics.active_users,
+                revenue_today: businessMetrics.revenue_today,
+                pending_kyc: businessMetrics.pending_kyc
+            },
             containers: dockerMetrics.containers,
             security_events: events.filter(e => e.type === 'SECURITY_ALERT')
         };

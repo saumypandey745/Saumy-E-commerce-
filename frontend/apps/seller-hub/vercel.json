@@ -1,12 +1,12 @@
 {
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://glasses-patch-dates-measuring.trycloudflare.com",
-    "API_URL": "https://glasses-patch-dates-measuring.trycloudflare.com"
+    "NEXT_PUBLIC_API_URL": "https://ran-paying-designated-projects.trycloudflare.com",
+    "API_URL": "https://ran-paying-designated-projects.trycloudflare.com"
   },
   "build": {
     "env": {
-      "NEXT_PUBLIC_API_URL": "https://glasses-patch-dates-measuring.trycloudflare.com",
-      "API_URL": "https://glasses-patch-dates-measuring.trycloudflare.com"
+      "NEXT_PUBLIC_API_URL": "https://ran-paying-designated-projects.trycloudflare.com",
+      "API_URL": "https://ran-paying-designated-projects.trycloudflare.com"
     }
   }
 }

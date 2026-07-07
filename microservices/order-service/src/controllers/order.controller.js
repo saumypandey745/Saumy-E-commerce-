@@ -91,3 +91,42 @@ exports.updateOrderStatus = async (req, res, next) => {
         next(error);
     }
 };
+
+exports.requestReturn = async (req, res, next) => {
+    try {
+        const order = await Order.findOne({ where: { id: req.params.id, user_id: req.user.id }});
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+        if (order.status !== 'DELIVERED') {
+            return res.status(400).json({ success: false, message: 'Only delivered orders can be returned' });
+        }
+
+        order.status = 'RETURN_REQUESTED';
+        await order.save();
+        res.status(200).json({ success: true, message: 'Return requested', order });
+    } catch (err) {
+        next(err);
+    }
+};
+
+exports.approveReturn = async (req, res, next) => {
+    try {
+        const order = await Order.findByPk(req.params.id);
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+        if (order.status !== 'RETURN_REQUESTED') {
+            return res.status(400).json({ success: false, message: 'Order is not in RETURN_REQUESTED status' });
+        }
+
+        order.status = 'RETURN_APPROVED';
+        await order.save();
+
+        // Trigger Saga
+        const orchestrator = require('../saga/orchestrator');
+        await orchestrator.startReturnSaga(order.id);
+
+        res.status(200).json({ success: true, message: 'Return approved and refund saga started', order });
+    } catch (err) {
+        next(err);
+    }
+};

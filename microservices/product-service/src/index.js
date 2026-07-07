@@ -8,7 +8,7 @@ const productRoutes = require('./routes/product.routes');
 const { errorHandler } = require('@ecommerce/shared');
 const { startReviewConsumer } = require('./consumers/review.consumer');
 
-const app = express();\n
+const app = express();
 // --- BEGIN ENTERPRISE STRUCTURED LOGGING ---
 const { AsyncLocalStorage } = require('async_hooks');
 const asyncLocalStorage = new AsyncLocalStorage();
@@ -40,7 +40,6 @@ const PORT = process.env.PORT || 8003;
 const { startBulkImportConsumer } = require('./consumers/bulk_import.consumer');
 
 // Connect DBs & MQ
-connectDB();
 connectRedis();
 connectRabbitMQ().then(() => {
     startInventoryConsumer();
@@ -77,3 +76,5 @@ app.use(errorHandler);
 app.listen(PORT, () => {
     console.log(`Product Service is running on port ${PORT}`);
 });
+
+module.exports = app;

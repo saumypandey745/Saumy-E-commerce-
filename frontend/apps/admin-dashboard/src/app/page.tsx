@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Activity, Users, Store, ShieldAlert, Cpu, Database, Server, Settings, Search, AlertOctagon } from 'lucide-react';
+import { Activity, Users, Store, ShieldAlert, Database, Server, Settings, Search, AlertOctagon } from 'lucide-react';
+import UsersTable from '@/components/UsersTable';
+import SellersTable from '@/components/SellersTable';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('global');
@@ -22,8 +24,8 @@ export default function Dashboard() {
   const [containerLogs, setContainerLogs] = useState<string>('');
 
   useEffect(() => {
-    const sseUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/monitoring/stream`;
-    const sse = new EventSource(sseUrl);
+    const sseUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/monitoring/stream`;
+    const sse = new EventSource(sseUrl, { withCredentials: true });
     
     sse.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -45,8 +47,8 @@ export default function Dashboard() {
     setSelectedContainer(name);
     setContainerLogs('Loading logs...');
     try {
-      const logsUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/monitoring/containers/${name}/logs`;
-      const res = await fetch(logsUrl);
+      const logsUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/monitoring/containers/${name}/logs`;
+      const res = await fetch(logsUrl, { credentials: 'include' });
       const text = await res.text();
       setContainerLogs(text);
     } catch (e) {
@@ -118,15 +120,15 @@ export default function Dashboard() {
           </div>
         );
       case 'users':
-        return <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm text-center text-gray-500">User Management Interface - Fetching Data...</div>;
+        return <UsersTable />;
       case 'analytics':
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
               <h2 className="text-xl font-bold">System Health Exports</h2>
               <div className="flex gap-4">
-                <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/monitoring/reports/system?format=pdf`} target="_blank" rel="noreferrer" className="px-4 py-2 bg-red-600 text-white rounded font-semibold text-sm hover:bg-red-700">Export PDF</a>
-                <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/monitoring/reports/system?format=csv`} target="_blank" rel="noreferrer" className="px-4 py-2 bg-green-600 text-white rounded font-semibold text-sm hover:bg-green-700">Export CSV</a>
+                <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/monitoring/reports/system?format=pdf`} target="_blank" rel="noreferrer" className="px-4 py-2 bg-red-600 text-white rounded font-semibold text-sm hover:bg-red-700">Export PDF</a>
+                <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/monitoring/reports/system?format=csv`} target="_blank" rel="noreferrer" className="px-4 py-2 bg-green-600 text-white rounded font-semibold text-sm hover:bg-green-700">Export CSV</a>
               </div>
             </div>
             <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500">
@@ -135,7 +137,7 @@ export default function Dashboard() {
           </div>
         );
       case 'sellers':
-        return <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm text-center text-gray-500">Seller KYC Approval Interface - 142 Pending</div>;
+        return <SellersTable />;
       case 'devops':
         return <div className="bg-slate-900 p-8 rounded-xl text-center text-emerald-400 font-mono">Connecting to Kubernetes Prometheus...</div>;
       default:

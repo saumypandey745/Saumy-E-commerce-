@@ -10,6 +10,7 @@
     "frontend/packages/*"
   ],
   "scripts": {
+    "test": "cross-env NODE_ENV=test jest",
     "start": "docker-compose -f infrastructure/docker-compose.yml up -d",
     "stop": "docker-compose -f infrastructure/docker-compose.yml down"
   },
@@ -17,5 +18,10 @@
     "@elastic/elasticsearch": "8.10.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "8.5.0"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4"
   }
 }

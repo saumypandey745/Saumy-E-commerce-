@@ -18,4 +18,7 @@ router.get('/analytics/admin', requireRole(['ADMIN']), analyticsController.getAd
 router.get('/', orderController.getUserOrders);
 router.get('/:id', orderController.getOrderById);
 
+router.post('/:id/return', orderController.requestReturn);
+router.put('/admin/:id/return/approve', requireRole(['ADMIN', 'SUPER_ADMIN']), orderController.approveReturn);
+
 module.exports = router;

@@ -27,3 +27,22 @@ exports.processCharge = async (amount, currency, source) => {
         throw new Error(error.message);
     }
 };
+
+exports.processRefund = async (amount, currency, chargeId) => {
+    try {
+        // Mock Stripe Behavior based on chargeId
+        if (chargeId && chargeId.startsWith('fail')) {
+            throw new Error('Refund failed. The charge has already been fully refunded.');
+        }
+
+        return {
+            id: 're_' + Math.random().toString(36).substr(2, 9),
+            charge: chargeId,
+            amount: amount * 100,
+            status: 'succeeded'
+        };
+
+    } catch (error) {
+        throw new Error(error.message);
+    }
+};

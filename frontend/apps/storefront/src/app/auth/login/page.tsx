@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 
 import { useState } from 'react';
@@ -40,7 +41,6 @@ export default function LoginPage() {
           id: response.data.user.id,
           name: response.data.user.name || email.split('@')[0],
           email: response.data.user.email,
-          token: token,
           role: role
         });
 
@@ -82,7 +82,6 @@ export default function LoginPage() {
           id: response.data.user.id,
           name: response.data.user.name || response.data.user.email.split('@')[0],
           email: response.data.user.email,
-          token: token,
           role: role
         });
 

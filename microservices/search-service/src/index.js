@@ -5,7 +5,7 @@ const { connectRabbitMQ, getBrokerMode } = require('./config/rabbitmq');
 const { startSyncConsumer } = require('./consumers/sync.consumer');
 const searchRoutes = require('./routes/search.routes');
 
-const app = express();\n
+const app = express();
 // --- BEGIN ENTERPRISE STRUCTURED LOGGING ---
 const { AsyncLocalStorage } = require('async_hooks');
 const asyncLocalStorage = new AsyncLocalStorage();

@@ -38,7 +38,7 @@ if (dbDialect === 'postgres') {
     // Local dev fallback: SQLite
     sequelize = new Sequelize({
         dialect: 'sqlite',
-        storage: process.env.DB_STORAGE || './user_db.sqlite',
+        storage: process.env.NODE_ENV === 'test' ? ':memory:' : (process.env.DB_STORAGE || './user_db.sqlite'),
         logging: false,
     });
 }

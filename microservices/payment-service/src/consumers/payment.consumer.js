@@ -7,8 +7,8 @@ const startPaymentConsumer = async () => {
     const channel = getChannel();
     
     const q = await channel.assertQueue('payment_saga_commands', { durable: true });
-    
     await channel.bindQueue(q.queue, 'ecommerce_events', 'command.payment.process');
+    await channel.bindQueue(q.queue, 'ecommerce_events', 'command.payment.refund');
 
     console.log('[Payment Service] Payment Consumer listening for commands...');
 
@@ -70,7 +70,41 @@ const startPaymentConsumer = async () => {
 
                     publishEvent('event.payment.failed', { order_id, reason: error.message });
                 }
-            } 
+            } else if (routingKey === 'command.payment.refund') {
+                const { order_id, amount } = content;
+                console.log(`[Payment Service] Processing REFUND for order ${order_id}`);
+                
+                // Idempotency / Duplicate Check
+                const existingRefund = await Transaction.findOne({ where: { order_id, status: 'REFUNDED' } });
+                if (existingRefund) {
+                    console.log(`[Payment Service] Idempotency Hit: Refund for order ${order_id} already exists.`);
+                    channel.ack(msg);
+                    return;
+                }
+
+                try {
+                    // Get the original transaction to find the charge_id
+                    const originalTx = await Transaction.findOne({ where: { order_id, status: 'SUCCESS' } });
+                    if (!originalTx) throw new Error('Original successful transaction not found');
+
+                    const refund = await stripeService.processRefund(amount, 'USD', originalTx.stripe_charge_id);
+                    
+                    await Transaction.create({
+                        order_id,
+                        stripe_charge_id: refund.id,
+                        amount,
+                        currency: 'USD',
+                        status: 'REFUNDED'
+                    });
+
+                    console.log(`[Payment Service] Refund SUCCESS for order ${order_id}`);
+                    publishEvent('event.payment.refund_success', { order_id });
+
+                } catch (error) {
+                    console.log(`[Payment Service] Refund FAILED for order ${order_id}: ${error.message}`);
+                    publishEvent('event.payment.refund_failed', { order_id, reason: error.message });
+                }
+            }
 
             channel.ack(msg);
         } catch (error) {

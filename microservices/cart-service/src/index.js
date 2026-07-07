@@ -10,7 +10,7 @@ dotenv.config();
 const cartRoutes = require('./routes/cart.routes');
 const wishlistRoutes = require('./routes/wishlist.routes');
 
-const app = express();\n
+const app = express();
 // --- BEGIN ENTERPRISE STRUCTURED LOGGING ---
 const { AsyncLocalStorage } = require('async_hooks');
 const asyncLocalStorage = new AsyncLocalStorage();
@@ -47,7 +47,7 @@ const allowedOrigins = [
 ];
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) return callback(null, true);
         return callback(new Error('CORS: Origin not allowed'));
     },
     credentials: true
@@ -59,7 +59,6 @@ app.get('/openapi.json', (req, res) => res.sendFile(require('path').join(__dirna
 app.use(mongoSanitize());
 
 // Init DB & Redis
-connectDB();
 connectRedis();
 
 app.use('/api/v1/cart', cartRoutes);
@@ -69,9 +68,13 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', service: 'cart-service', port: PORT });
 });
 
-const server = app.listen(PORT, () => {
+let server;
+if (require.main === module) {
+    connectDB();
+    server = app.listen(PORT, () => {
     console.log(`[Cart Service] Running on port ${PORT}`);
 });
+}
 
 // MED-02: Graceful shutdown — ensures Redis connections are closed cleanly
 // and in-flight cart operations complete before pod termination
@@ -99,3 +102,5 @@ const gracefulShutdown = async (signal) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
 
+
+module.exports = app;

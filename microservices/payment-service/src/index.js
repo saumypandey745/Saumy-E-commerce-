@@ -8,7 +8,7 @@ const { startSellerConsumer } = require('./consumers/seller.consumer');
 const paymentRoutes = require('./routes/payment.routes');
 const { errorHandler } = require('@ecommerce/shared');
 
-const app = express();\n
+const app = express();
 // --- BEGIN ENTERPRISE STRUCTURED LOGGING ---
 const { AsyncLocalStorage } = require('async_hooks');
 const asyncLocalStorage = new AsyncLocalStorage();
@@ -41,7 +41,7 @@ app.use(cors({
     origin: (origin, callback) => {
         const allowed = ['http://localhost:3000','http://localhost:8000',...
             (process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [])];
-        if (!origin || allowed.includes(origin)) return callback(null, true);
+        if (!origin || allowed.includes(origin) || origin.endsWith('.vercel.app')) return callback(null, true);
         return callback(new Error('CORS: Origin not allowed'));
     },
     credentials: true
@@ -52,7 +52,6 @@ app.use('/webhook', express.raw({type: 'application/json'}), webhookRoutes);
 app.use(express.json());
 app.get('/openapi.json', (req, res) => res.sendFile(require('path').join(__dirname, 'openapi.json')));
 
-connectDB();
 connectRabbitMQ().then(() => {
     startPaymentConsumer();
     startSellerConsumer();
@@ -67,9 +66,13 @@ app.get('/health', (req, res) => {
 
 app.use(errorHandler);
 
-const server = app.listen(PORT, () => {
+let server;
+if (require.main === module) {
+    connectDB();
+    server = app.listen(PORT, () => {
     console.log(`[Payment Service] Running on port ${PORT}`);
 });
+}
 
 // MED-02: Graceful shutdown — payment service must not drop in-flight Stripe calls
 const gracefulShutdown = async (signal) => {
@@ -88,3 +91,5 @@ const gracefulShutdown = async (signal) => {
 };
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
+
+module.exports = app;
