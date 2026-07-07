@@ -3,7 +3,8 @@ services:
   name: ecommerce-api-gateway
   env: node
   plan: free
-  buildCommand: npm install -g pnpm@9 && pnpm install --filter api-gateway --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --no-frozen-lockfile --filter
+    api-gateway --config.ignore-scripts=true
   startCommand: node api-gateway/src/index.js
   healthCheckPath: /health
   envVars:
@@ -43,8 +44,8 @@ services:
   name: ecommerce-auth-service
   env: node
   plan: free
-  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/auth-service
-    --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --no-frozen-lockfile --filter
+    @ecommerce/auth-service --config.ignore-scripts=true
   startCommand: node microservices/auth-service/src/index.js
   healthCheckPath: /health
   envVars:
@@ -62,8 +63,8 @@ services:
   name: ecommerce-product-service
   env: node
   plan: free
-  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/product-service
-    --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --no-frozen-lockfile --filter
+    @ecommerce/product-service --config.ignore-scripts=true
   startCommand: node microservices/product-service/src/index.js
   healthCheckPath: /health
   envVars:
@@ -83,8 +84,8 @@ services:
   name: ecommerce-order-service
   env: node
   plan: free
-  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/order-service
-    --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --no-frozen-lockfile --filter
+    @ecommerce/order-service --config.ignore-scripts=true
   startCommand: node microservices/order-service/src/index.js
   healthCheckPath: /health
   envVars:
@@ -102,8 +103,8 @@ services:
   name: ecommerce-cart-service
   env: node
   plan: free
-  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/cart-service
-    --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --no-frozen-lockfile --filter
+    @ecommerce/cart-service --config.ignore-scripts=true
   startCommand: node microservices/cart-service/src/index.js
   healthCheckPath: /health
   envVars:
@@ -119,8 +120,8 @@ services:
   name: ecommerce-payment-service
   env: node
   plan: free
-  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/payment-service
-    --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --no-frozen-lockfile --filter
+    @ecommerce/payment-service --config.ignore-scripts=true
   startCommand: node microservices/payment-service/src/index.js
   healthCheckPath: /health
   envVars:
@@ -138,8 +139,8 @@ services:
   name: ecommerce-review-service
   env: node
   plan: free
-  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/review-service
-    --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --no-frozen-lockfile --filter
+    @ecommerce/review-service --config.ignore-scripts=true
   startCommand: node microservices/review-service/src/index.js
   healthCheckPath: /health
   envVars:
@@ -157,7 +158,8 @@ services:
   name: ecommerce-search-service
   env: node
   plan: free
-  buildCommand: npm install -g pnpm@9 && pnpm install --filter search-service --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --no-frozen-lockfile --filter
+    search-service --config.ignore-scripts=true
   startCommand: node microservices/search-service/src/index.js
   healthCheckPath: /health
   envVars:
@@ -175,8 +177,8 @@ services:
   name: ecommerce-ai-service
   env: node
   plan: free
-  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/ai-service
-    --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --no-frozen-lockfile --filter
+    @ecommerce/ai-service --config.ignore-scripts=true
   startCommand: node microservices/ai-service/src/index.js
   healthCheckPath: /health
   envVars:
@@ -190,8 +192,8 @@ services:
   name: ecommerce-monitoring-service
   env: node
   plan: free
-  buildCommand: npm install -g pnpm@9 && pnpm install --filter monitoring-service
-    --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --no-frozen-lockfile --filter
+    monitoring-service --config.ignore-scripts=true
   startCommand: node microservices/monitoring-service/src/index.js
   healthCheckPath: /health
   envVars:
