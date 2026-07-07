@@ -1,0 +1,12 @@
+{
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://glasses-patch-dates-measuring.trycloudflare.com",
+    "API_URL": "https://glasses-patch-dates-measuring.trycloudflare.com"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_API_URL": "https://glasses-patch-dates-measuring.trycloudflare.com",
+      "API_URL": "https://glasses-patch-dates-measuring.trycloudflare.com"
+    }
+  }
+}

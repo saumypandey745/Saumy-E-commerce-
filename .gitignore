@@ -49,3 +49,4 @@ orderitems.json
 
 # Local Netlify folder
 .netlify
+.vercel
