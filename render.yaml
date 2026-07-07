@@ -3,12 +3,16 @@ services:
   name: ecommerce-api-gateway
   env: node
   plan: free
-  buildCommand: pnpm install --filter api-gateway --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --filter api-gateway --config.ignore-scripts=true
   startCommand: node api-gateway/src/index.js
   healthCheckPath: /health
   envVars:
   - key: NODE_ENV
     value: production
+  - key: NODE_VERSION
+    value: 20.10.0
+  - key: PNPM_VERSION
+    value: 9.4.0
   - key: AUTH_SERVICE_URL
     value: https://ecommerce-auth-service.onrender.com
   - key: PRODUCT_SERVICE_URL
@@ -39,12 +43,17 @@ services:
   name: ecommerce-auth-service
   env: node
   plan: free
-  buildCommand: pnpm install --filter @ecommerce/auth-service --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/auth-service
+    --config.ignore-scripts=true
   startCommand: node microservices/auth-service/src/index.js
   healthCheckPath: /health
   envVars:
   - key: NODE_ENV
     value: production
+  - key: NODE_VERSION
+    value: 20.10.0
+  - key: PNPM_VERSION
+    value: 9.4.0
   - key: DB_URI
     sync: false
   - key: JWT_SECRET
@@ -53,12 +62,17 @@ services:
   name: ecommerce-product-service
   env: node
   plan: free
-  buildCommand: pnpm install --filter @ecommerce/product-service --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/product-service
+    --config.ignore-scripts=true
   startCommand: node microservices/product-service/src/index.js
   healthCheckPath: /health
   envVars:
   - key: NODE_ENV
     value: production
+  - key: NODE_VERSION
+    value: 20.10.0
+  - key: PNPM_VERSION
+    value: 9.4.0
   - key: MONGO_URI
     sync: false
   - key: REDIS_URL
@@ -69,12 +83,17 @@ services:
   name: ecommerce-order-service
   env: node
   plan: free
-  buildCommand: pnpm install --filter @ecommerce/order-service --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/order-service
+    --config.ignore-scripts=true
   startCommand: node microservices/order-service/src/index.js
   healthCheckPath: /health
   envVars:
   - key: NODE_ENV
     value: production
+  - key: NODE_VERSION
+    value: 20.10.0
+  - key: PNPM_VERSION
+    value: 9.4.0
   - key: DATABASE_URL
     sync: false
   - key: RABBITMQ_URL
@@ -83,24 +102,34 @@ services:
   name: ecommerce-cart-service
   env: node
   plan: free
-  buildCommand: pnpm install --filter @ecommerce/cart-service --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/cart-service
+    --config.ignore-scripts=true
   startCommand: node microservices/cart-service/src/index.js
   healthCheckPath: /health
   envVars:
   - key: NODE_ENV
     value: production
+  - key: NODE_VERSION
+    value: 20.10.0
+  - key: PNPM_VERSION
+    value: 9.4.0
   - key: REDIS_URL
     sync: false
 - type: web
   name: ecommerce-payment-service
   env: node
   plan: free
-  buildCommand: pnpm install --filter @ecommerce/payment-service --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/payment-service
+    --config.ignore-scripts=true
   startCommand: node microservices/payment-service/src/index.js
   healthCheckPath: /health
   envVars:
   - key: NODE_ENV
     value: production
+  - key: NODE_VERSION
+    value: 20.10.0
+  - key: PNPM_VERSION
+    value: 9.4.0
   - key: DATABASE_URL
     sync: false
   - key: RABBITMQ_URL
@@ -109,12 +138,17 @@ services:
   name: ecommerce-review-service
   env: node
   plan: free
-  buildCommand: pnpm install --filter @ecommerce/review-service --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/review-service
+    --config.ignore-scripts=true
   startCommand: node microservices/review-service/src/index.js
   healthCheckPath: /health
   envVars:
   - key: NODE_ENV
     value: production
+  - key: NODE_VERSION
+    value: 20.10.0
+  - key: PNPM_VERSION
+    value: 9.4.0
   - key: DATABASE_URL
     sync: false
   - key: RABBITMQ_URL
@@ -123,12 +157,16 @@ services:
   name: ecommerce-search-service
   env: node
   plan: free
-  buildCommand: pnpm install --filter search-service --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --filter search-service --config.ignore-scripts=true
   startCommand: node microservices/search-service/src/index.js
   healthCheckPath: /health
   envVars:
   - key: NODE_ENV
     value: production
+  - key: NODE_VERSION
+    value: 20.10.0
+  - key: PNPM_VERSION
+    value: 9.4.0
   - key: ELASTICSEARCH_URL
     sync: false
   - key: RABBITMQ_URL
@@ -137,22 +175,32 @@ services:
   name: ecommerce-ai-service
   env: node
   plan: free
-  buildCommand: pnpm install --filter @ecommerce/ai-service --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --filter @ecommerce/ai-service
+    --config.ignore-scripts=true
   startCommand: node microservices/ai-service/src/index.js
   healthCheckPath: /health
   envVars:
   - key: NODE_ENV
     value: production
+  - key: NODE_VERSION
+    value: 20.10.0
+  - key: PNPM_VERSION
+    value: 9.4.0
 - type: web
   name: ecommerce-monitoring-service
   env: node
   plan: free
-  buildCommand: pnpm install --filter monitoring-service --config.ignore-scripts=true
+  buildCommand: npm install -g pnpm@9 && pnpm install --filter monitoring-service
+    --config.ignore-scripts=true
   startCommand: node microservices/monitoring-service/src/index.js
   healthCheckPath: /health
   envVars:
   - key: NODE_ENV
     value: production
+  - key: NODE_VERSION
+    value: 20.10.0
+  - key: PNPM_VERSION
+    value: 9.4.0
 - type: web
   name: ecommerce-aiml-service
   env: python
