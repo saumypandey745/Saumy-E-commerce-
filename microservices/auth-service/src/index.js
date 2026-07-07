@@ -14,6 +14,7 @@ if (!process.env.JWT_SECRET) {
 }
 
 const app = express();\n
+app.get("/health", (req, res) => res.status(200).json({ status: "OK", service: "auth-service" }));
 // --- BEGIN ENTERPRISE STRUCTURED LOGGING ---
 const { AsyncLocalStorage } = require('async_hooks');
 const asyncLocalStorage = new AsyncLocalStorage();

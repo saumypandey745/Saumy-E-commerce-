@@ -3,3 +3,8 @@ packages:
   - 'microservices/*'
   - 'frontend/apps/*'
   - 'frontend/packages/*'
+allowBuilds:
+  '@scarf/scarf': true
+  argon2: true
+  bcrypt: true
+  sqlite3: true
